@@ -1,5 +1,5 @@
 /**
- * Backend de Agenda Prensa 1.0.1.
+ * Backend de Agenda Comunicaciones 1.0.3.
  * Desplegar como aplicación web ejecutada por el propietario.
  */
 const SPREADSHEET_ID = '1bksbYIKRRv1F0gSp-UlIPRfkD-eu1arigSb2ZxBEdoQ';
@@ -71,7 +71,7 @@ function doGet(e) {
       }
 
       case 'ping':
-        result = { ok: true, action: 'ping', message: 'Agenda Prensa API activa' };
+        result = { ok: true, action: 'ping', message: 'Agenda Comunicaciones API activa' };
         break;
 
       default:
@@ -262,7 +262,7 @@ function createHoliday_(params) {
   const name = clean_(params.nombre);
   const type = normalizeHolidayType_(params.tipo);
   const scope = clean_(params.alcance) || defaultHolidayScope_(type);
-  const source = clean_(params.fuente) || 'Registro manual desde Agenda Prensa';
+  const source = clean_(params.fuente) || 'Registro manual desde Agenda Comunicaciones';
 
   if (findHolidayRow_(sheet, { fecha: date, nombre: name })) {
     throw new Error('Ese feriado ya se encuentra registrado.');
@@ -290,7 +290,7 @@ function updateHoliday_(params) {
   const name = clean_(params.nombre);
   const type = normalizeHolidayType_(params.tipo);
   const scope = clean_(params.alcance) || defaultHolidayScope_(type);
-  const source = clean_(params.fuente) || 'Registro manual desde Agenda Prensa';
+  const source = clean_(params.fuente) || 'Registro manual desde Agenda Comunicaciones';
 
   sheet.getRange(row, 1, 1, HOLIDAY_COLUMN_COUNT).setValues([[date, name, type, scope, 'Sí', source]]);
   sheet.getRange(row, 1).setNumberFormat('dd/MM/yyyy');

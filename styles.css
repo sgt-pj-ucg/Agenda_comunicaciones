@@ -4535,3 +4535,158 @@ html[data-theme="light"] .status-pill.s-redes{color:#7e4d7a;background:#f8eff7;}
 @media(min-width:1100px){
   .header-escudo.press-symbol{width:48px;height:48px;}
 }
+
+
+/* ==========================================================================
+   Agenda Comunicaciones 1.0.3 · identidad visual reforzada
+   ========================================================================== */
+
+:root{
+  --press-accent:#2dc7c6;
+  --press-accent-strong:#1b9197;
+  --press-surface:#0d273d;
+}
+html[data-theme="light"]{
+  --press-accent:#158f96;
+  --press-accent-strong:#0e7077;
+  --press-surface:#e6f7f7;
+}
+
+.header-escudo.press-symbol{
+  border:0!important;
+  background:transparent!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);
+}
+.header-escudo.press-symbol img{
+  padding:0!important;
+  border-radius:14px;
+}
+.launch-mark img{border-radius:22%;}
+
+/* SVG de cada tipo: consistente en Android/iPhone y sin emoji del sistema. */
+.type-svg{
+  display:block;
+  width:15px;
+  height:15px;
+  flex:0 0 auto;
+}
+.mode-icon{
+  display:inline-grid!important;
+  place-items:center;
+  width:23px;
+  height:23px;
+  margin-right:4px;
+  border-radius:8px;
+  background:color-mix(in srgb,var(--type-accent) 18%,transparent);
+}
+.mode-icon .type-svg{width:14px;height:14px;}
+.badge .type-svg{width:14px;height:14px;}
+
+/* Más diferenciación visual entre tipos. */
+.event-card.tipo-actividad{--type-accent:#22bd82;}
+.event-card.tipo-jurisdiccional{--type-accent:#3e7ff2;}
+.event-card.tipo-audiovisual{--type-accent:#bb5bdf;}
+.event-card.tipo-turno{--type-accent:#e59a32;}
+.event-card.tipo-efemeride{--type-accent:#df5965;}
+.event-card.tipo-ausencias,.event-card.special{--type-accent:#72859f;}
+
+.event-card[class*="tipo-"]{
+  border-left:4px solid var(--type-accent)!important;
+  background:
+    linear-gradient(118deg,color-mix(in srgb,var(--type-accent) 8%,transparent),transparent 34%),
+    var(--v5-card);
+}
+.event-card[class*="tipo-"] .mode-banner:not(.mode-special){
+  border-bottom:1px solid color-mix(in srgb,var(--type-accent) 38%,var(--v5-line))!important;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb,var(--type-accent) 24%,var(--v5-card)),
+      color-mix(in srgb,var(--type-accent) 9%,var(--v5-card)))!important;
+  color:color-mix(in srgb,var(--type-accent) 72%,white 28%)!important;
+}
+html[data-theme="light"] .event-card[class*="tipo-"]{
+  background:
+    linear-gradient(118deg,color-mix(in srgb,var(--type-accent) 9%,white),transparent 38%),
+    var(--v5-card);
+}
+html[data-theme="light"] .event-card[class*="tipo-"] .mode-banner:not(.mode-special){
+  color:color-mix(in srgb,var(--type-accent) 82%,#142033 18%)!important;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb,var(--type-accent) 17%,white),
+      color-mix(in srgb,var(--type-accent) 6%,white))!important;
+}
+
+/* Badges del tipo heredan el color real de la tarjeta. */
+.event-card[class*="tipo-"] .badge[class*="b-tipo-"]{
+  gap:6px;
+  border-color:color-mix(in srgb,var(--type-accent) 52%,var(--v5-line))!important;
+  background:color-mix(in srgb,var(--type-accent) 15%,var(--v5-card))!important;
+  color:color-mix(in srgb,var(--type-accent) 68%,white 32%)!important;
+}
+html[data-theme="light"] .event-card[class*="tipo-"] .badge[class*="b-tipo-"]{
+  background:color-mix(in srgb,var(--type-accent) 11%,white)!important;
+  color:color-mix(in srgb,var(--type-accent) 82%,#1b2638 18%)!important;
+}
+
+/* Persona del Equipo Comunicaciones detectada desde MM / PH. */
+.b-team-member{
+  gap:6px!important;
+  color:#bddbd9!important;
+  border-color:color-mix(in srgb,var(--press-accent) 35%,var(--v5-line))!important;
+  background:color-mix(in srgb,var(--press-accent) 8%,var(--v5-card))!important;
+}
+.team-initial{
+  display:inline-grid;
+  place-items:center;
+  min-width:22px;
+  height:20px;
+  padding:0 4px;
+  border-radius:7px;
+  color:#071c2c;
+  background:color-mix(in srgb,var(--press-accent) 78%,white 22%);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.03em;
+}
+html[data-theme="light"] .b-team-member{
+  color:#2d6668!important;
+  background:#eefafa!important;
+}
+html[data-theme="light"] .team-initial{
+  color:white;
+  background:var(--press-accent-strong);
+}
+
+/* Líneas del calendario: más fáciles de diferenciar. */
+.activity-line{
+  gap:2px!important;
+}
+.activity-line i{
+  min-width:6px!important;
+  height:3px!important;
+  border-radius:999px!important;
+}
+.activity-line i.press-actividad{background:#22bd82!important;}
+.activity-line i.press-jurisdiccional{background:#3e7ff2!important;}
+.activity-line i.press-audiovisual{background:#bb5bdf!important;}
+.activity-line i.press-turno{background:#e59a32!important;}
+.activity-line i.press-efemeride{background:#df5965!important;}
+
+/* Tipos: override explícito por si existen reglas antiguas con !important. */
+.mode-tipo-actividad,.b-tipo-actividad{border-color:color-mix(in srgb,#22bd82 55%,var(--v5-line))!important;}
+.mode-tipo-jurisdiccional,.b-tipo-jurisdiccional{border-color:color-mix(in srgb,#3e7ff2 55%,var(--v5-line))!important;}
+.mode-tipo-audiovisual,.b-tipo-audiovisual{border-color:color-mix(in srgb,#bb5bdf 55%,var(--v5-line))!important;}
+.mode-tipo-turno,.b-tipo-turno{border-color:color-mix(in srgb,#e59a32 55%,var(--v5-line))!important;}
+.mode-tipo-efemeride,.b-tipo-efemeride{border-color:color-mix(in srgb,#df5965 55%,var(--v5-line))!important;}
+.mode-tipo-ausencias,.b-tipo-ausencias{border-color:color-mix(in srgb,#72859f 55%,var(--v5-line))!important;}
+
+@media(max-width:759px){
+  .mode-icon{width:22px;height:22px;border-radius:7px;}
+  .mode-icon .type-svg{width:13px;height:13px;}
+  .b-team-member{max-width:100%;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .header-escudo.press-symbol{box-shadow:none;}
+}

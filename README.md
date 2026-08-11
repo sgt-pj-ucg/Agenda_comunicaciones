@@ -1,56 +1,36 @@
-# Agenda Prensa 1.0.2 — lista para publicación
+# Agenda Comunicaciones 1.0.3 — identidad visual
 
-## Planilla definitiva
+Esta versión mantiene la misma planilla, Apps Script y funcionamiento de Agenda Comunicaciones.
 
-Spreadsheet ID:
+## Cambios visuales
 
-`1bksbYIKRRv1F0gSp-UlIPRfkD-eu1arigSb2ZxBEdoQ`
+- Nuevo logo e ícono PWA para Android/iPhone.
+- Nombre visible: `Agenda Comunicaciones`.
+- Encabezado: `Equipo Comunicaciones`.
+- Iconografía SVG propia para cada tipo, consistente entre Android, iPhone y notebook.
+- Colores con mayor separación visual:
+  - Actividad: verde esmeralda
+  - Jurisdiccional: azul intenso
+  - Audiovisual: violeta
+  - Turno: ámbar
+  - Efeméride: coral
+  - Ausencias: gris azulado
 
-Pestaña:
+## Integrantes
 
-`Hoja 1`
+La aplicación interpreta los códigos de la planilla solo para visualización:
 
-Columnas:
+- `MM` → `Margarett Molina`
+- `PH` → `Paxelia Huerta`
 
-`FECHA · DÍA · HORA · TIPO · DETALLE · LUGAR · ESTADO`
+La planilla original no se modifica. Si una celda contiene `MM-PH`, la interfaz mostrará ambos nombres completos.
 
-## Apps Script
+La búsqueda también reconoce `Margarett Molina` y `Paxelia Huerta`.
 
-La aplicación ya quedó configurada con esta implementación:
+## Publicación
 
-`https://script.google.com/macros/s/AKfycbw0QmwblTzoC2TJma0pranj-4wBlIBmNo0TjFvXW2mMH--DkndCO9vgzTTxiwxm4wbsxQ/exec`
+Sube a GitHub el contenido de este paquete reemplazando los archivos anteriores.
 
-No es necesario editar `config.js`.
+`Code.gs` no necesita volver a desplegarse por estos cambios visuales; se incluye solo como respaldo y con la identidad textual actualizada.
 
-## Publicación en GitHub Pages
-
-Sube todo el contenido de esta carpeta/repositorio:
-
-- `index.html`
-- `styles.css`
-- `app.js`
-- `config.js`
-- `service-worker.js`
-- `manifest.webmanifest`
-- carpeta `icons/`
-
-`Code.gs` se conserva en el paquete solo como respaldo del backend y no se sube a GitHub Pages.
-
-## Zona horaria
-
-El backend trabaja con:
-
-`America/Santiago`
-
-También conviene configurar la propia planilla de Google Sheets con zona horaria Santiago.
-
-## Separación de sistemas
-
-Agenda Prensa utiliza:
-
-- su propia planilla;
-- su propia URL de Apps Script;
-- su propia identidad visual;
-- su propio PWA.
-
-No comparte datos ni backend con Agenda Presidenta.
+Al publicar, cierra completamente la PWA instalada y vuelve a abrirla. Debido al cambio de ícono, en algunos teléfonos puede ser necesario eliminar el acceso instalado y volver a instalarlo para ver inmediatamente el nuevo logo.

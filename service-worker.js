@@ -1,15 +1,16 @@
-const CACHE_NAME = 'agenda-prensa-shell-102';
+const CACHE_NAME = 'agenda-comunicaciones-shell-103';
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css?v=102',
-  './app.js?v=102',
-  './config.js?v=102',
+  './styles.css?v=103',
+  './app.js?v=103',
+  './config.js?v=103',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './icons/comunicaciones-symbol.png'
 ];
 
 self.addEventListener('install', event => {

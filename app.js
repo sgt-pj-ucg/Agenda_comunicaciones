@@ -1,4 +1,4 @@
-// Agenda Prensa · Corte de Apelaciones de La Serena
+// Agenda Comunicaciones · Corte de Apelaciones de La Serena
 const SCRIPT_URL = String(window.AGENDA_PRENSA_CONFIG?.scriptUrl || '').trim();
 
 let allEvents = [];
@@ -160,6 +160,37 @@ function normalizeStatus(value) {
   if(lower==='cancelada' || lower==='cancelado') return 'Cancelada';
   if(!raw || lower==='sin estado') return 'Sin estado';
   return raw || 'Sin estado';
+}
+
+
+const TEAM_MEMBERS = Object.freeze({
+  MM:'Margarett Molina',
+  PH:'Paxelia Huerta'
+});
+
+function expandTeamCodes(value=''){
+  return String(value||'')
+    .replace(/\bMM\b/g,TEAM_MEMBERS.MM)
+    .replace(/\bPH\b/g,TEAM_MEMBERS.PH);
+}
+
+function communicationMembersInText(value=''){
+  const raw=String(value||'');
+  const members=[];
+  if(/\bMM\b/.test(raw)) members.push({code:'MM',name:TEAM_MEMBERS.MM});
+  if(/\bPH\b/.test(raw)) members.push({code:'PH',name:TEAM_MEMBERS.PH});
+  return members;
+}
+
+function typeIconSvg(type){
+  const common='class="type-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  if(type==='Actividad') return `<svg ${common}><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m8.5 15 2 2 5-5"/></svg>`;
+  if(type==='Jurisdiccional') return `<svg ${common}><path d="M12 3v18M5 7h14M8 21h8"/><path d="m7 7-3 6h6L7 7Zm10 0-3 6h6l-3-6Z"/></svg>`;
+  if(type==='Audiovisual') return `<svg ${common}><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3Z"/><path d="m8.5 10 4 2.5-4 2.5Z"/></svg>`;
+  if(type==='Turno') return `<svg ${common}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/><path d="M18.2 5.8 20 4M5.8 5.8 4 4"/></svg>`;
+  if(type==='Efeméride') return `<svg ${common}><path d="m12 3 2.4 4.8 5.3.8-3.8 3.7.9 5.2-4.8-2.5-4.8 2.5.9-5.2-3.8-3.7 5.3-.8L12 3Z"/></svg>`;
+  if(type==='Ausencias') return `<svg ${common}><circle cx="9" cy="8" r="3"/><path d="M3.5 20c.5-3.8 2.7-5.8 5.5-5.8 2.2 0 4.1 1.2 5 3.4M17 10h5"/></svg>`;
+  return `<svg ${common}><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>`;
 }
 
 function eventKey(event) {
@@ -399,13 +430,13 @@ function haptic(pattern=18){
 
 function typeMeta(value) {
   const type=normalizeType(value);
-  if(type==='Actividad') return {className:'tipo-actividad',badge:'b-tipo-actividad',icon:'●',label:'Actividad'};
-  if(type==='Jurisdiccional') return {className:'tipo-jurisdiccional',badge:'b-tipo-jurisdiccional',icon:'⚖',label:'Jurisdiccional'};
-  if(type==='Audiovisual') return {className:'tipo-audiovisual',badge:'b-tipo-audiovisual',icon:'◉',label:'Audiovisual'};
-  if(type==='Turno') return {className:'tipo-turno',badge:'b-tipo-turno',icon:'◆',label:'Turno'};
-  if(type==='Efeméride') return {className:'tipo-efemeride',badge:'b-tipo-efemeride',icon:'✦',label:'Efeméride'};
-  if(type==='Ausencias') return {className:'tipo-ausencias',badge:'b-tipo-ausencias',icon:'⊘',label:'Ausencias'};
-  return {className:'tipo-otro',badge:'b-tipo-otro',icon:'•',label:type||'Otro'};
+  if(type==='Actividad') return {className:'tipo-actividad',badge:'b-tipo-actividad',icon:typeIconSvg(type),label:'Actividad'};
+  if(type==='Jurisdiccional') return {className:'tipo-jurisdiccional',badge:'b-tipo-jurisdiccional',icon:typeIconSvg(type),label:'Jurisdiccional'};
+  if(type==='Audiovisual') return {className:'tipo-audiovisual',badge:'b-tipo-audiovisual',icon:typeIconSvg(type),label:'Audiovisual'};
+  if(type==='Turno') return {className:'tipo-turno',badge:'b-tipo-turno',icon:typeIconSvg(type),label:'Turno'};
+  if(type==='Efeméride') return {className:'tipo-efemeride',badge:'b-tipo-efemeride',icon:typeIconSvg(type),label:'Efeméride'};
+  if(type==='Ausencias') return {className:'tipo-ausencias',badge:'b-tipo-ausencias',icon:typeIconSvg(type),label:'Ausencias'};
+  return {className:'tipo-otro',badge:'b-tipo-otro',icon:typeIconSvg('Otro'),label:type||'Otro'};
 }
 
 function statusEmoji(status) {
@@ -493,7 +524,7 @@ function updateExecutiveBrief(today,todayEvents) {
   const kicker=today.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 
   document.getElementById('briefKicker').textContent=kicker.charAt(0).toUpperCase()+kicker.slice(1);
-  document.getElementById('briefTitle').textContent=`${greeting}, equipo de prensa.`;
+  document.getElementById('briefTitle').textContent=`${greeting}, Equipo Comunicaciones.`;
 
   let subtitle='No hay actividades registradas para hoy.';
   if(holiday){
@@ -502,7 +533,7 @@ function updateExecutiveBrief(today,todayEvents) {
     else if(active.length) subtitle=`Hoy es ${holiday.name}. Tiene ${count} registrada${active.length===1?'':'s'}.`;
     else subtitle=`Hoy es feriado nacional: ${holiday.name}. No hay actividades agendadas.`;
   }else if(active.length===absences.length&&absences.length){
-    subtitle='La jornada está registrada como ausencia del equipo.';
+    subtitle='La jornada está registrada como ausencia del Equipo Comunicaciones.';
   }else if(active.length){
     const count=`${active.length} ${active.length===1?'actividad':'actividades'}`;
     if(next){
@@ -533,11 +564,14 @@ function renderCard(event) {
   const special=isSpecialActivity(event);
   const temporal=eventTemporalMeta(event);
   const key=escapeHTML(eventKey(event));
+  const displayDetail=expandTeamCodes(event.DETALLE);
+  const members=communicationMembersInText(event.DETALLE);
+  const memberBadges=members.map(member=>`<span class="badge b-team-member"><span class="team-initial">${member.code}</span>${escapeHTML(member.name)}</span>`).join('');
   const temporalBadge=temporal.state==='next'
     ? `<span class="temporal-badge next"><span class="temporal-dot"></span><strong>Próxima</strong><em>${escapeHTML(temporal.label)}</em></span>`
     : temporal.state==='past'?`<span class="temporal-badge past">Finalizada</span>`:'';
   const banner=special
-    ? `<div class="mode-banner mode-special"><span>AUSENCIA · EQUIPO DE COMUNICACIONES</span>${temporalBadge}</div>`
+    ? `<div class="mode-banner mode-special"><span>AUSENCIA · EQUIPO COMUNICACIONES</span>${temporalBadge}</div>`
     : `<div class="mode-banner mode-${itemType.className}"><span class="mode-copy"><span class="mode-icon">${itemType.icon}</span> ${itemType.label}</span>${temporalBadge}</div>`;
   return `
     <article class="event-card ${itemType.className} ${special?'special':''} ${status==='Cancelada'?'cancelada':''} ${temporal.state?`temporal-${temporal.state}`:''}" data-key="${key}" data-row="${event._row||''}">
@@ -545,22 +579,22 @@ function renderCard(event) {
       <div class="card-top">
         <div class="time-bubble ${event.HORA?'':'no-time'}"><div class="t-hour">${event.HORA?escapeHTML(formatTime(event.HORA)):'S/H'}</div></div>
         <div class="card-body">
-          <div class="card-title">${escapeHTML(event.DETALLE)}</div>
+          <div class="card-title">${escapeHTML(displayDetail)}</div>
           <div class="card-badges">
             <span class="badge ${itemType.badge}">${itemType.icon} ${escapeHTML(normalizeType(event.TIPO))}</span>
-            ${event.LUGAR?`<span class="badge b-lugar">🏛 ${escapeHTML(event.LUGAR)}</span>`:''}
+            ${memberBadges}${event.LUGAR?`<span class="badge b-lugar">🏛 ${escapeHTML(expandTeamCodes(event.LUGAR))}</span>`:''}
           </div>
         </div>
       </div>
       <div class="status-row">
-        <button class="status-pill ${statusPillClass(status)}" data-key="${key}" type="button" aria-label="Cambiar estado de ${escapeHTML(event.DETALLE)}">
+        <button class="status-pill ${statusPillClass(status)}" data-key="${key}" type="button" aria-label="Cambiar estado de ${escapeHTML(displayDetail)}">
           ${statusEmoji(status)} ${escapeHTML(status)} <span class="chevron">▾</span>
         </button>
         <div class="event-actions">
-          <button class="card-action edit" data-key="${key}" type="button" title="Editar actividad" aria-label="Editar ${escapeHTML(event.DETALLE)}">
+          <button class="card-action edit" data-key="${key}" type="button" title="Editar actividad" aria-label="Editar ${escapeHTML(displayDetail)}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
           </button>
-          <button class="card-action delete" data-key="${key}" type="button" title="Eliminar actividad" aria-label="Eliminar ${escapeHTML(event.DETALLE)}">
+          <button class="card-action delete" data-key="${key}" type="button" title="Eliminar actividad" aria-label="Eliminar ${escapeHTML(displayDetail)}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
           </button>
         </div>
@@ -1098,7 +1132,7 @@ function holidayPayloadFromForm(){
     nombre:document.getElementById('hNombre').value.trim(),
     tipo:type,
     alcance:document.getElementById('hAlcance').value.trim()||defaultHolidayScope(type),
-    fuente:document.getElementById('hFuente').value.trim()||'Registro manual desde Agenda equipo de prensa'
+    fuente:document.getElementById('hFuente').value.trim()||'Registro manual desde Agenda Comunicaciones'
   };
 }
 
@@ -1390,7 +1424,7 @@ async function refreshAndResolveEvent(reference){
 
 function openDeleteModal(event) {
   pendingDeleteEvent=event;
-  document.getElementById('deleteActivityName').textContent=`“${event.DETALLE}”`;
+  document.getElementById('deleteActivityName').textContent=`“${expandTeamCodes(event.DETALLE)}”`;
   document.getElementById('deleteMsg').textContent='';
   deleteModal.classList.add('open');
 }
@@ -1558,7 +1592,7 @@ function searchEvents(query) {
   if(targetDate||type||status||/\b(esta semana|semana)\b/.test(rawQuery)){
     if(!words.length) return base.slice().sort((a,b)=>parseDate(a.FECHA)-parseDate(b.FECHA)||compareEventsChronologically(a,b));
   }
-  const getText=event=>[event.DETALLE,event.LUGAR,normalizeType(event.TIPO),getStatus(event)].join(' ').toLowerCase();
+  const getText=event=>[event.DETALLE,expandTeamCodes(event.DETALLE),event.LUGAR,expandTeamCodes(event.LUGAR),normalizeType(event.TIPO),getStatus(event)].join(' ').toLowerCase();
   if(!words.length) return base.slice().sort((a,b)=>parseDate(a.FECHA)-parseDate(b.FECHA)||compareEventsChronologically(a,b));
   let results=base.filter(event=>words.every(word=>getText(event).includes(word)));
   if(results.length) return results;
@@ -1971,7 +2005,7 @@ window.setTimeout(dismissLaunchScreen,3200);
 
 
 async function loadData({silent=false}={}) {
-  if(!silent) document.getElementById('content').innerHTML='<div class="loading"><div class="spinner"></div>Cargando agenda de prensa…</div>';
+  if(!silent) document.getElementById('content').innerHTML='<div class="loading"><div class="spinner"></div>Cargando Agenda Comunicaciones…</div>';
   try {
     const demoMode=new URLSearchParams(window.location.search).has('demo');
     if(demoMode){
