@@ -1,63 +1,82 @@
-# Agenda Comunicaciones 1.0.5 — corrección y revisión del resumen
+# Agenda Comunicaciones 1.0.6 — seguridad de escritura en Google Sheets
 
-## Corrección principal
+## Auditoría realizada
 
-La aplicación tenía el mismo patrón que Agenda Presidenta: una próxima actividad
-con estado `Pendiente` o `Por Confirmar` podía generar además un chip separado de
-`tarea(s) por revisar`.
+Se revisó el backend de Agenda Comunicaciones buscando el mismo tipo de error
+reportado en Agenda Presidenta.
 
-En teléfonos angostos ese segundo chip podía quedar parcialmente visible a la
-derecha.
+### Problema 1 — setNumberFormat
 
-Ahora:
+Se encontraron 7 operaciones:
 
-- el estado de la próxima actividad se integra dentro de la propia ficha;
-- esa misma actividad no se vuelve a contar como aviso adicional;
-- si existen otras pendientes, se informa solo la cantidad adicional;
-- la ficha Próxima actividad ocupa todo el ancho en móvil;
-- los demás avisos bajan de línea y nunca quedan cortados horizontalmente.
+`setNumberFormat('dd/MM/yyyy')`
 
-## Otros errores corregidos durante la revisión
+Estas podían producir el mensaje:
 
-### MM / PH en resumen superior
-La próxima actividad ahora expande también:
+`No puedes configurar el formato de número de las celdas de una columna con texto.`
 
-- `MM` → `Margarett Molina`
-- `PH` → `Paxelia Huerta`
+Se eliminaron las 7.
 
-Esto ya ocurría en las tarjetas, pero no en el resumen ejecutivo.
+La corrección cubre:
 
-### Boletín
-Se corrigió el plural incorrecto:
+- crear actividad;
+- editar actividad;
+- crear feriado;
+- editar feriado;
+- importar/actualizar feriados oficiales;
+- crear nuevas filas de feriados oficiales;
+- creación inicial de `FERIADOS_CHILE`.
 
-- antes podía mostrarse `2 boletínes`
-- ahora muestra `2 boletines`
+### Problema 2 — copiar formato de la fila anterior
 
-### Estados editoriales
-Si la próxima actividad tiene estado:
+Al crear una actividad se ejecutaba:
 
-- Boletín
-- Redes Sociales
-- Por Confirmar
-- Pendiente
+`copyPreviousRowFormat_`
 
-el estado aparece de forma compacta dentro de la ficha de Próxima actividad,
-sin crear una tarjeta redundante.
+Esa operación no es necesaria para la aplicación y puede entrar en conflicto
+con una tabla de Google Sheets que tenga columnas tipadas.
 
-### Ausencias
-Una jornada compuesta completamente por Ausencias no genera un segundo chip
-redundante de ausencia. Si la ausencia convive con otros tipos, sí se informa.
+Se eliminó también esa copia de formato.
 
-## Sin cambios de backend
+## Resultado
+
+El backend ahora:
+
+- escribe únicamente los valores;
+- normaliza FECHA como `dd/MM/yyyy`;
+- normaliza HORA como `HH:mm`;
+- respeta los tipos/formato que ya tenga configurada la planilla;
+- no modifica el formato de ninguna columna de la agenda;
+- mantiene la búsqueda robusta de filas para editar/eliminar.
+
+Se realizó además una auditoría automática y el `Code.gs` final no contiene
+ninguna llamada a:
+
+- `setNumberFormat`
+- `setNumberFormats`
+- `copyFormatToRange`
+
+## Qué no cambia
 
 No se modificaron:
 
-- planilla Google Sheets
-- Code.gs
-- URL de Apps Script
-- creación, edición o eliminación
-- voz
-- calendario
-- feriados
+- diseño de la aplicación;
+- GitHub Pages;
+- URL de Apps Script;
+- planilla;
+- lógica de MM / PH;
+- voz;
+- calendario;
+- feriados;
+- creación, edición y eliminación desde la interfaz.
 
-Solo deben actualizarse los archivos web en GitHub.
+## Instalación
+
+Esta actualización es exclusivamente de backend:
+
+1. abra Apps Script de Agenda Comunicaciones;
+2. reemplace el contenido por el nuevo `Code.gs`;
+3. actualice la implementación existente;
+4. conserve la misma URL `/exec`.
+
+No es necesario subir nuevos archivos a GitHub para esta corrección.
