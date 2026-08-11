@@ -504,7 +504,7 @@ function updateHeaderStats() {
     ${holiday?`<div class="stat-chip holiday"><span class="dot"></span>${escapeHTML(holiday.name)}</div>`:''}
     ${confirmed?`<div class="stat-chip"><span class="dot" style="background:#4f9c83"></span>${confirmed} confirmada${confirmed===1?'':'s'}</div>`:''}
     ${toConfirm?`<div class="stat-chip"><span class="dot" style="background:#7d72a7"></span>${toConfirm} por confirmar</div>`:''}
-    ${boletin?`<div class="stat-chip"><span class="dot" style="background:#4f87ad"></span>${boletin} boletín${boletin===1?'':'es'}</div>`:''}
+    ${boletin?`<div class="stat-chip"><span class="dot" style="background:#4f87ad"></span>${boletin} ${boletin===1?'boletín':'boletines'}</div>`:''}
     ${redes?`<div class="stat-chip"><span class="dot" style="background:#a2649c"></span>${redes} redes</div>`:''}
     ${pending?`<div class="stat-chip"><span class="dot" style="background:#b98135"></span>${pending} pendiente${pending===1?'':'s'}</div>`:''}
     ${absent?`<div class="stat-chip"><span class="dot" style="background:#7186a8"></span>${absent} ausencia${absent===1?'':'s'}</div>`:''}`;
@@ -547,14 +547,23 @@ function updateExecutiveBrief(today,todayEvents) {
   document.getElementById('briefSubtitle').textContent=subtitle;
 
   const signals=[];
+  const nextStatus=next?getStatus(next):'';
+  const nextNeedsReview=['Por Confirmar','Pendiente'].includes(nextStatus);
+  const nextWorkflowStatus=next&&['Boletín','Redes Sociales'].includes(nextStatus);
+  const additionalPending=Math.max(0,pending-(nextNeedsReview?1:0));
+  const mixedAbsences=absences.length>0&&absences.length<active.length;
+
   if(holiday) signals.push(`<span class="brief-signal holiday"><strong>Feriado nacional</strong><span>${escapeHTML(holiday.name)}</span></span>`);
   if(next){
     const temporal=eventTemporalMeta(next);
-    signals.push(`<button class="brief-signal next" type="button" data-brief-action="next"><span class="signal-dot"></span><span class="brief-signal-copy"><strong>Próxima actividad</strong><span class="brief-signal-detail"><b>${formatTime(next.HORA)}</b><span>${escapeHTML(next.DETALLE)}</span></span></span><em>${temporal.label}</em></button>`);
+    const statusTag=(nextNeedsReview||nextWorkflowStatus)
+      ? `<span class="brief-next-status ${nextStatus==='Pendiente'?'is-pending':nextStatus==='Por Confirmar'?'is-confirm':nextStatus==='Boletín'?'is-bulletin':'is-social'}">${escapeHTML(nextStatus)}</span>`
+      : '';
+    signals.push(`<button class="brief-signal next" type="button" data-brief-action="next"><span class="signal-dot"></span><span class="brief-signal-copy"><span class="brief-next-heading"><strong>Próxima actividad</strong>${statusTag}</span><span class="brief-signal-detail"><b>${formatTime(next.HORA)}</b><span>${escapeHTML(expandTeamCodes(next.DETALLE))}</span></span></span><em>${temporal.label}</em></button>`);
   }
   if(conflicts.length) signals.push(`<span class="brief-signal warning"><strong>Atención</strong><span>${conflicts.length===1?'Coincidencia horaria':'Coincidencias horarias'}</span></span>`);
-  if(pending) signals.push(`<span class="brief-signal pending"><strong>${pending}</strong><span>${pending===1?'tarea por revisar':'tareas por revisar'}</span></span>`);
-  if(absences.length) signals.push(`<span class="brief-signal absence"><strong>${absences.length}</strong><span>${absences.length===1?'ausencia registrada':'ausencias registradas'}</span></span>`);
+  if(additionalPending) signals.push(`<span class="brief-signal pending"><strong>${additionalPending}</strong><span>${additionalPending===1?'actividad adicional por revisar':'actividades adicionales por revisar'}</span></span>`);
+  if(mixedAbsences) signals.push(`<span class="brief-signal absence"><strong>${absences.length}</strong><span>${absences.length===1?'ausencia registrada':'ausencias registradas'}</span></span>`);
   document.getElementById('briefSignals').innerHTML=signals.join('');
 }
 

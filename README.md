@@ -1,49 +1,63 @@
-# Agenda Comunicaciones 1.0.4 — legibilidad y tarjetas premium
+# Agenda Comunicaciones 1.0.5 — corrección y revisión del resumen
 
-## Cambios
+## Corrección principal
 
-### Saludo superior
-El saludo ya no se trunca en móvil.
+La aplicación tenía el mismo patrón que Agenda Presidenta: una próxima actividad
+con estado `Pendiente` o `Por Confirmar` podía generar además un chip separado de
+`tarea(s) por revisar`.
 
-Ejemplo:
+En teléfonos angostos ese segundo chip podía quedar parcialmente visible a la
+derecha.
 
-`Buenas noches, Equipo Comunicaciones.`
+Ahora:
 
-Puede ocupar dos líneas cuando el ancho del teléfono lo exige.
+- el estado de la próxima actividad se integra dentro de la propia ficha;
+- esa misma actividad no se vuelve a contar como aviso adicional;
+- si existen otras pendientes, se informa solo la cantidad adicional;
+- la ficha Próxima actividad ocupa todo el ancho en móvil;
+- los demás avisos bajan de línea y nunca quedan cortados horizontalmente.
 
-### Tipos
-Se aumentó la legibilidad de:
+## Otros errores corregidos durante la revisión
 
-- Actividad
-- Jurisdiccional
-- Audiovisual
-- Turno
-- Efeméride
-- Ausencias
+### MM / PH en resumen superior
+La próxima actividad ahora expande también:
 
-La barra superior de cada tarjeta ahora tiene tipografía más grande, ícono mayor y un fondo tintado con el color del tipo.
+- `MM` → `Margarett Molina`
+- `PH` → `Paxelia Huerta`
 
-### Tarjetas
-Las tarjetas tienen:
+Esto ya ocurría en las tarjetas, pero no en el resumen ejecutivo.
 
-- borde completo teñido por tipo;
-- franja lateral de 5 px;
-- sombra suave de dos niveles;
-- ligero brillo interior;
-- separación vertical mayor;
-- interacción de presión/hover discreta.
+### Boletín
+Se corrigió el plural incorrecto:
 
-Las actividades finalizadas siguen viéndose como pasadas, pero ya no quedan excesivamente deslavadas.
+- antes podía mostrarse `2 boletínes`
+- ahora muestra `2 boletines`
 
-### Hora y metadatos
-La hora, los badges y el estado aumentaron de tamaño y contraste.
+### Estados editoriales
+Si la próxima actividad tiene estado:
 
-### Logo
-El encabezado utiliza directamente `icon-192.png`, el mismo recurso del PWA, para evitar que el símbolo aparezca vacío por problemas de caché o carga de un archivo secundario.
+- Boletín
+- Redes Sociales
+- Por Confirmar
+- Pendiente
 
-## Publicación
-Reemplaza en GitHub los archivos de este paquete.
+el estado aparece de forma compacta dentro de la ficha de Próxima actividad,
+sin crear una tarjeta redundante.
 
-No es necesario volver a desplegar `Code.gs`; esta versión es exclusivamente visual.
+### Ausencias
+Una jornada compuesta completamente por Ausencias no genera un segundo chip
+redundante de ausencia. Si la ausencia convive con otros tipos, sí se informa.
 
-Después de que GitHub Pages termine de publicar, cierra completamente la aplicación instalada y vuelve a abrirla. Si el ícono o estilos permanecen antiguos, elimina la PWA y vuelve a instalarla.
+## Sin cambios de backend
+
+No se modificaron:
+
+- planilla Google Sheets
+- Code.gs
+- URL de Apps Script
+- creación, edición o eliminación
+- voz
+- calendario
+- feriados
+
+Solo deben actualizarse los archivos web en GitHub.

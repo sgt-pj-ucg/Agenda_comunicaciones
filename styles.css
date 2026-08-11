@@ -4968,3 +4968,166 @@ html[data-theme="light"] .event-card[class*="tipo-"] .time-bubble .t-hour{
     font-size:11.5px!important;
   }
 }
+
+/* ==========================================================================
+   Agenda Comunicaciones 1.0.5 · corrección del resumen ejecutivo
+   ========================================================================== */
+
+.brief-next-heading{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.brief-next-heading strong{min-width:0;}
+
+.brief-next-status{
+  display:inline-flex;
+  align-items:center;
+  flex:0 0 auto;
+  min-height:20px;
+  padding:3px 6px;
+  border-radius:999px;
+  font-size:8px;
+  line-height:1;
+  font-weight:850;
+  letter-spacing:.015em;
+  white-space:nowrap;
+}
+.brief-next-status.is-pending{
+  color:#e5ad59;
+  border:1px solid color-mix(in srgb,#e59a32 48%,var(--v5-line));
+  background:color-mix(in srgb,#e59a32 11%,var(--v5-card));
+}
+.brief-next-status.is-confirm{
+  color:#c8b9ea;
+  border:1px solid color-mix(in srgb,#8d77bd 48%,var(--v5-line));
+  background:color-mix(in srgb,#8d77bd 11%,var(--v5-card));
+}
+.brief-next-status.is-bulletin{
+  color:#9dc9ea;
+  border:1px solid color-mix(in srgb,#4f87ad 48%,var(--v5-line));
+  background:color-mix(in srgb,#4f87ad 11%,var(--v5-card));
+}
+.brief-next-status.is-social{
+  color:#d7add3;
+  border:1px solid color-mix(in srgb,#a2649c 48%,var(--v5-line));
+  background:color-mix(in srgb,#a2649c 11%,var(--v5-card));
+}
+html[data-theme="light"] .brief-next-status.is-pending{
+  color:#805517;background:#fff6e8;
+}
+html[data-theme="light"] .brief-next-status.is-confirm{
+  color:#66558b;background:#f6f2ff;
+}
+html[data-theme="light"] .brief-next-status.is-bulletin{
+  color:#356b8d;background:#eef7fd;
+}
+html[data-theme="light"] .brief-next-status.is-social{
+  color:#7f4e7a;background:#fff2fc;
+}
+
+/* Blindaje de anchura: ningún aviso puede salir parcialmente de la tarjeta. */
+.executive-brief,
+.brief-copy,
+.brief-signals,
+.brief-signal,
+.brief-signal-copy,
+.brief-signal-detail{
+  min-width:0!important;
+}
+.brief-signals{
+  max-width:100%!important;
+}
+.brief-signal{
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+.brief-signal-detail>span{
+  min-width:0!important;
+}
+
+/* Móvil: próxima actividad siempre a ancho completo; alertas extra bajan. */
+@media(max-width:759px){
+  .brief-signals{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+    overflow-x:hidden!important;
+    margin-right:0!important;
+    padding-right:0!important;
+    gap:6px!important;
+  }
+  .brief-signal{
+    max-width:100%!important;
+    overflow:hidden!important;
+  }
+  .brief-signal.next{
+    flex:1 1 100%!important;
+    width:100%!important;
+    max-width:100%!important;
+    grid-template-columns:8px minmax(0,1fr) auto!important;
+  }
+  .brief-signal:not(.next){
+    flex:0 1 auto!important;
+    width:auto!important;
+    max-width:100%!important;
+  }
+  .brief-next-heading{
+    gap:5px!important;
+  }
+  .brief-next-heading strong{
+    font-size:10px!important;
+  }
+  .brief-next-status{
+    min-height:19px;
+    padding:3px 5px;
+    font-size:7.8px;
+  }
+  .brief-signal-detail{
+    overflow:hidden!important;
+  }
+  .brief-signal-detail>span{
+    display:block!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    max-width:100%!important;
+  }
+  .brief-signal.next em{
+    max-width:105px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+}
+
+/* Teléfonos angostos: no sacrificar hora ni tiempo restante. */
+@media(max-width:390px){
+  .brief-signal.next{
+    grid-template-columns:7px minmax(0,1fr) auto!important;
+    gap:6px!important;
+    padding:7px 8px!important;
+  }
+  .brief-next-heading{
+    flex-wrap:wrap;
+    row-gap:3px!important;
+  }
+  .brief-signal.next em{
+    max-width:88px;
+    font-size:9px!important;
+  }
+}
+
+/* Notebook: avisos adicionales contenidos sin desplazamiento lateral. */
+@media(min-width:1100px){
+  .brief-signals{
+    min-width:0;
+    overflow:hidden;
+  }
+  .brief-signal.next{
+    min-width:0;
+    max-width:430px!important;
+  }
+}
