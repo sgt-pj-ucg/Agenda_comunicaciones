@@ -4690,3 +4690,281 @@ html[data-theme="light"] .team-initial{
 @media(prefers-reduced-motion:reduce){
   .header-escudo.press-symbol{box-shadow:none;}
 }
+
+/* ==========================================================================
+   Agenda Comunicaciones 1.0.4 · legibilidad + tarjetas premium
+   ========================================================================== */
+
+/* Logo visible y consistente con el ícono instalado. */
+.header-escudo.press-symbol{
+  border:1px solid color-mix(in srgb,var(--press-accent) 40%,var(--v5-line))!important;
+  background:color-mix(in srgb,var(--press-accent) 7%,var(--v5-card))!important;
+  box-shadow:
+    0 7px 18px rgba(11,35,55,.11),
+    inset 0 1px 0 rgba(255,255,255,.45)!important;
+}
+.header-escudo.press-symbol img{
+  width:100%!important;
+  height:100%!important;
+  padding:2px!important;
+  object-fit:cover!important;
+  filter:none!important;
+  opacity:1!important;
+  border-radius:12px!important;
+}
+
+/* Tarjetas: borde completo + lateral de tipo + profundidad moderada. */
+.event-card[class*="tipo-"]{
+  position:relative;
+  overflow:hidden;
+  border-width:1.5px!important;
+  border-style:solid!important;
+  border-color:color-mix(in srgb,var(--type-accent) 31%,var(--v5-line))!important;
+  border-left:5px solid var(--type-accent)!important;
+  border-radius:20px!important;
+  box-shadow:
+    0 9px 24px rgba(7,20,38,.14),
+    0 2px 5px rgba(7,20,38,.07),
+    inset 0 1px 0 rgba(255,255,255,.055)!important;
+  background:
+    linear-gradient(122deg,color-mix(in srgb,var(--type-accent) 9%,transparent),transparent 39%),
+    var(--v5-card)!important;
+}
+.event-card[class*="tipo-"]::before{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  height:1px!important;
+  background:linear-gradient(90deg,
+    color-mix(in srgb,var(--type-accent) 52%,transparent),
+    rgba(255,255,255,.12),
+    transparent)!important;
+  pointer-events:none!important;
+}
+html[data-theme="light"] .event-card[class*="tipo-"]{
+  border-color:color-mix(in srgb,var(--type-accent) 37%,#dbe2ea)!important;
+  box-shadow:
+    0 10px 25px rgba(30,53,76,.12),
+    0 2px 5px rgba(30,53,76,.055),
+    inset 0 1px 0 rgba(255,255,255,.98)!important;
+  background:
+    linear-gradient(122deg,color-mix(in srgb,var(--type-accent) 9%,white),rgba(255,255,255,.96) 42%),
+    #fff!important;
+}
+
+/* Las actividades finalizadas siguen diferenciadas, pero ya no "desaparecen". */
+.event-card.temporal-past{
+  opacity:.9!important;
+  filter:saturate(.94)!important;
+}
+html[data-theme="light"] .event-card.temporal-past{
+  opacity:.94!important;
+  filter:saturate(.97)!important;
+}
+
+/* Barra superior de tipo: más grande, nítida y con color evidente. */
+.event-card[class*="tipo-"] .mode-banner:not(.mode-special){
+  min-height:43px!important;
+  padding:8px 12px!important;
+  border-bottom:1px solid color-mix(in srgb,var(--type-accent) 34%,var(--v5-line))!important;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb,var(--type-accent) 23%,var(--v5-card)),
+      color-mix(in srgb,var(--type-accent) 8%,var(--v5-card)) 68%,
+      transparent)!important;
+  color:color-mix(in srgb,var(--type-accent) 70%,white 30%)!important;
+  font-size:11.5px!important;
+  font-weight:850!important;
+  letter-spacing:.025em!important;
+}
+html[data-theme="light"] .event-card[class*="tipo-"] .mode-banner:not(.mode-special){
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb,var(--type-accent) 18%,white),
+      color-mix(in srgb,var(--type-accent) 5%,white) 72%,
+      white)!important;
+  color:color-mix(in srgb,var(--type-accent) 83%,#17263a 17%)!important;
+}
+
+.mode-copy{
+  gap:8px!important;
+}
+.mode-icon{
+  width:26px!important;
+  height:26px!important;
+  flex:0 0 26px!important;
+  border-radius:8px!important;
+  background:color-mix(in srgb,var(--type-accent) 15%,transparent)!important;
+  border:1px solid color-mix(in srgb,var(--type-accent) 26%,transparent);
+}
+.mode-icon .type-svg{
+  width:16px!important;
+  height:16px!important;
+}
+
+/* Cuerpo: título y metadatos ligeramente mayores. */
+.event-card .card-top{
+  padding-top:14px!important;
+  padding-bottom:13px!important;
+}
+.event-card .card-title{
+  font-size:15.5px!important;
+  line-height:1.32!important;
+  font-weight:760!important;
+  letter-spacing:-.08px;
+}
+.event-card .card-badges{
+  gap:6px!important;
+}
+.event-card .badge{
+  min-height:29px;
+  padding:5px 9px!important;
+  gap:6px!important;
+  font-size:11.5px!important;
+  line-height:1!important;
+  font-weight:750!important;
+}
+.event-card .badge .type-svg{
+  width:15px!important;
+  height:15px!important;
+}
+
+/* Hora más contrastada y ligada al color del tipo. */
+.event-card[class*="tipo-"] .time-bubble{
+  border:1px solid color-mix(in srgb,var(--type-accent) 30%,var(--v5-line))!important;
+  background:color-mix(in srgb,var(--type-accent) 7%,var(--v5-surface-2))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 3px 8px rgba(10,26,43,.06)!important;
+}
+.event-card[class*="tipo-"] .time-bubble .t-hour{
+  color:color-mix(in srgb,var(--type-accent) 76%,white 24%)!important;
+  font-weight:870!important;
+}
+html[data-theme="light"] .event-card[class*="tipo-"] .time-bubble{
+  background:color-mix(in srgb,var(--type-accent) 6%,white)!important;
+}
+html[data-theme="light"] .event-card[class*="tipo-"] .time-bubble .t-hour{
+  color:color-mix(in srgb,var(--type-accent) 84%,#22334a 16%)!important;
+}
+
+/* Estado más legible. */
+.event-card .status-row{
+  min-height:54px!important;
+  padding:9px 13px!important;
+  background:color-mix(in srgb,var(--v5-surface-2) 52%,transparent)!important;
+}
+.event-card .status-pill{
+  min-height:33px!important;
+  padding:7px 11px!important;
+  font-size:11.5px!important;
+  font-weight:780!important;
+}
+
+/* Interacción premium discreta. */
+.event-card[class*="tipo-"]{
+  transition:
+    transform .18s cubic-bezier(.2,.8,.2,1),
+    box-shadow .18s ease,
+    border-color .18s ease!important;
+}
+.event-card[class*="tipo-"]:active{
+  transform:translateY(1px) scale(.992)!important;
+}
+@media(hover:hover){
+  .event-card[class*="tipo-"]:hover{
+    transform:translateY(-3px)!important;
+    border-color:color-mix(in srgb,var(--type-accent) 52%,var(--v5-line))!important;
+    box-shadow:
+      0 15px 34px rgba(7,20,38,.17),
+      0 3px 8px rgba(7,20,38,.07)!important;
+  }
+}
+
+/* Móvil: saludo completo y jerarquía más cómoda. */
+@media(max-width:759px){
+  .executive-brief{
+    min-height:92px!important;
+    padding:11px 10px 11px 14px!important;
+    gap:9px!important;
+    border-radius:17px!important;
+  }
+  .brief-copy{
+    min-width:0!important;
+    overflow:visible!important;
+    gap:3px!important;
+  }
+  .brief-title{
+    display:block!important;
+    max-width:none!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    font-size:15.5px!important;
+    line-height:1.18!important;
+    letter-spacing:-.15px;
+  }
+  .brief-subtitle{
+    font-size:10.8px!important;
+    line-height:1.3!important;
+    -webkit-line-clamp:2!important;
+  }
+  .brief-calendar-button{
+    width:39px!important;
+    height:39px!important;
+    flex:0 0 39px!important;
+    border-radius:12px!important;
+  }
+  .brief-calendar-button svg{
+    width:18px!important;
+    height:18px!important;
+  }
+
+  .event-card[class*="tipo-"]{
+    margin-bottom:13px!important;
+    border-radius:19px!important;
+    box-shadow:
+      0 8px 20px rgba(20,43,68,.12),
+      0 2px 4px rgba(20,43,68,.05),
+      inset 0 1px 0 rgba(255,255,255,.75)!important;
+  }
+  .event-card[class*="tipo-"] .mode-banner:not(.mode-special){
+    min-height:44px!important;
+    padding:8px 11px!important;
+    font-size:11.5px!important;
+  }
+  .event-card .card-title{
+    font-size:15.5px!important;
+  }
+  .event-card .badge{
+    font-size:11.5px!important;
+    padding:5px 9px!important;
+  }
+  .event-card .status-pill{
+    font-size:11.5px!important;
+  }
+  .header-escudo.press-symbol{
+    width:39px!important;
+    height:39px!important;
+    border-radius:12px!important;
+  }
+}
+
+/* Notebook conserva profundidad sin sobredimensionar. */
+@media(min-width:1100px){
+  .event-card[class*="tipo-"]{
+    border-radius:20px!important;
+    box-shadow:
+      0 10px 26px rgba(7,20,38,.13),
+      0 2px 6px rgba(7,20,38,.055)!important;
+  }
+  .event-card .card-title{
+    font-size:16px!important;
+  }
+  .event-card .badge{
+    font-size:11.5px!important;
+  }
+}
