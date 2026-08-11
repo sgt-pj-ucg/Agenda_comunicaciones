@@ -1,0 +1,36 @@
+{
+  "name": "Agenda Prensa · Corte de Apelaciones de La Serena",
+  "short_name": "Agenda Prensa",
+  "description": "Agenda móvil del equipo de prensa y comunicaciones de la Corte de Apelaciones de La Serena",
+  "lang": "es-CL",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0c1f36",
+  "theme_color": "#18747f",
+  "categories": [
+    "productivity",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

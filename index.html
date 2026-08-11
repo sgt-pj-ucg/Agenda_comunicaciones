@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es" data-product="agenda-prensa-1">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Agenda Prensa" />
+  <meta name="theme-color" content="#0b1226" id="themeColorMeta" />
+  <meta name="description" content="Agenda de prensa y comunicaciones de la Corte de Apelaciones de La Serena" />
+  <title>Agenda Prensa</title>
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem('agenda-theme');
+        const preferredTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = savedTheme || preferredTheme;
+      } catch (_) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    })();
+  </script>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preload" as="image" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css?v=102" />
+</head>
+<body>
+
+<!-- Bienvenida de inicio: breve, institucional y no bloquea la carga de datos -->
+<div class="launch-screen" id="launchScreen" role="status" aria-label="Iniciando Agenda Prensa">
+  <div class="launch-ambient launch-ambient-one" aria-hidden="true"></div>
+  <div class="launch-ambient launch-ambient-two" aria-hidden="true"></div>
+  <div class="launch-content">
+    <div class="launch-mark" aria-hidden="true">
+      <img src="icons/icon-192.png" alt="" />
+      <span class="launch-halo"></span>
+    </div>
+    <div class="launch-copy">
+      <span class="launch-kicker">AGENDA PRENSA</span>
+      <strong class="launch-title">Equipo de Comunicaciones</strong>
+      <span class="launch-subtitle">Corte de Apelaciones de La Serena</span>
+    </div>
+    <div class="launch-progress" aria-hidden="true"><span></span></div>
+  </div>
+</div>
+
+
+<!-- Cabecera ejecutiva -->
+<header class="app-header" id="appHeader">
+<div class="header-top">
+<div class="header-escudo press-symbol"><img alt="Agenda Prensa" src="icons/prensa-symbol.png"/></div>
+<div class="header-text">
+<div class="agenda-label">AGENDA PRENSA</div>
+<h1>Equipo de Comunicaciones</h1>
+<div class="subtitle">COMUNICACIONES · CORTE DE APELACIONES DE LA SERENA</div>
+</div>
+<div class="header-actions">
+<button aria-label="Cambiar a modo claro" class="theme-toggle" id="themeToggle" title="Cambiar tema" type="button">
+<span aria-hidden="true" class="theme-icon sun">☀</span>
+<span aria-hidden="true" class="theme-icon moon">☾</span>
+</button>
+</div>
+</div>
+<section class="executive-brief" aria-live="polite">
+      <div class="brief-copy">
+        <span class="brief-kicker" id="briefKicker">Resumen ejecutivo</span>
+        <strong class="brief-title" id="briefTitle">Preparando la agenda de hoy…</strong>
+        <span class="brief-subtitle" id="briefSubtitle">La información se actualizará desde Google Sheets.</span>
+    <div class="brief-signals" id="briefSignals" aria-label="Alertas y datos relevantes del día"></div>
+      </div>
+      <button class="brief-calendar-button" id="briefCalendarButton" type="button" aria-label="Abrir calendario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
+      </button>
+    </section>
+    <div class="header-stats" id="headerStats"></div>
+</header>
+<!-- TABS -->
+<div class="tabs-wrapper">
+<div class="tabs-row" id="tabsRow"></div>
+</div>
+<!-- SEARCH -->
+<div class="search-bar">
+<div class="search-wrap">
+<span class="s-icon">🔍</span>
+<input autocomplete="off" id="searchInput" placeholder="Buscar o decir: ¿qué tenemos mañana?" type="text"/>
+<button id="clearSearch">✕</button>
+</div>
+<button class="voice-btn" id="voiceBtn" type="button" aria-label="Buscar por voz" title="Buscar por voz">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+<rect height="12" rx="3" width="6" x="9" y="2"></rect>
+<path d="M5 10a7 7 0 0 0 14 0"></path>
+<line x1="12" x2="12" y1="19" y2="22"></line>
+<line x1="8" x2="16" y1="22" y2="22"></line>
+</svg>
+</button>
+</div>
+<div aria-live="polite" class="search-info" id="searchInfo"></div>
+<!-- CONTENT -->
+<div class="content" id="content">
+<div class="loading"><div class="spinner"></div>Cargando agenda…</div>
+</div>
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+<button class="nav-btn active" data-view="agenda" id="navAgenda">
+<span class="nav-icon">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path>
+<rect height="4" rx="1" width="6" x="9" y="3"></rect>
+<line x1="9" x2="15" y1="12" y2="12"></line>
+<line x1="9" x2="13" y1="16" y2="16"></line>
+</svg>
+</span>Agenda
+  </button>
+<button class="nav-btn" data-view="calendario" id="navCalendar">
+<span class="nav-icon">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<rect height="18" rx="2" width="18" x="3" y="4"></rect>
+<line x1="16" x2="16" y1="2" y2="6"></line>
+<line x1="8" x2="8" y1="2" y2="6"></line>
+<line x1="3" x2="21" y1="10" y2="10"></line>
+<circle cx="8" cy="15" fill="currentColor" r=".5"></circle>
+<circle cx="12" cy="15" fill="currentColor" r=".5"></circle>
+<circle cx="16" cy="15" fill="currentColor" r=".5"></circle>
+</svg>
+</span>Calendario
+  </button>
+<button class="nav-btn nav-add" id="navAdd" title="Nueva actividad">
+<span class="nav-icon">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.8" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="5" y2="19"></line>
+<line x1="5" x2="19" y1="12" y2="12"></line>
+</svg>
+</span>
+</button>
+<button class="nav-btn" data-view="buscar" id="navSearch">
+<span class="nav-icon">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<circle cx="11" cy="11" r="7"></circle>
+<line x1="16.5" x2="21" y1="16.5" y2="21"></line>
+</svg>
+</span>Buscar
+  </button>
+<button class="nav-btn" data-view="mes" id="navMes">
+<span class="nav-icon">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<rect height="18" rx="2" width="18" x="3" y="4"></rect>
+<line x1="16" x2="16" y1="2" y2="6"></line>
+<line x1="8" x2="8" y1="2" y2="6"></line>
+<line x1="3" x2="21" y1="10" y2="10"></line>
+<line x1="3" x2="21" y1="15" y2="15"></line>
+<line x1="10" x2="10" y1="10" y2="22"></line>
+</svg>
+</span>Mes
+  </button>
+</nav>
+
+<!-- MODAL: selector del botón + -->
+<div aria-labelledby="createChoiceTitle" aria-modal="true" class="modal-overlay create-choice-overlay" id="createChoiceModal" role="dialog">
+  <div class="modal create-choice-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-heading">
+      <div>
+        <h2 id="createChoiceTitle">Agregar a la agenda</h2>
+        <div class="modal-subtitle">Seleccione qué desea registrar.</div>
+      </div>
+      <button aria-label="Cerrar" class="modal-close" id="btnCloseCreateChoice" type="button">✕</button>
+    </div>
+    <div class="create-choice-grid">
+      <button class="create-choice-card activity-choice" id="createActivityChoice" type="button">
+        <span class="create-choice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="M12 13v5M9.5 15.5h5"/></svg>
+        </span>
+        <span><strong>Nueva actividad</strong><small>Hora, tipo, detalle, lugar y estado.</small></span>
+      </button>
+      <button class="create-choice-card holiday-choice" id="createHolidayChoice" type="button">
+        <span class="create-choice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/><path d="m8.5 15 2 2 5-5"/></svg>
+        </span>
+        <span><strong>Agregar feriado</strong><small>Nacional, regional o electoral, registrado manualmente.</small></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nueva / editar actividad -->
+<div aria-labelledby="activityModalTitle" aria-modal="true" class="modal-overlay" id="activityModal" role="dialog">
+<div class="modal">
+<div class="modal-handle"></div>
+<div class="modal-heading">
+<div>
+<h2 id="activityModalTitle">➕ Nueva actividad</h2>
+<div class="modal-subtitle" id="activityModalSubtitle">Registra la pauta, cobertura o tarea de comunicaciones.</div>
+</div>
+<button aria-label="Cerrar" class="modal-close" id="btnCloseActivityModal" type="button">✕</button>
+</div>
+<div class="required-note">Los campos marcados con * son obligatorios.</div>
+<div class="form-row">
+<div class="form-group">
+<label for="fFecha">Fecha *</label>
+<input id="fFecha" type="date"/>
+</div>
+<div class="form-group">
+<label for="timeFieldButton">Hora</label>
+<input id="fHora" type="hidden"/>
+<button aria-haspopup="dialog" class="time-field-button" id="timeFieldButton" type="button">
+<span class="time-field-value" id="timeFieldValue">Sin hora</span>
+<svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="9"></circle>
+<path d="M12 7v5l3 2"></path>
+</svg>
+</button>
+<div aria-label="Horas frecuentes" class="time-shortcuts">
+<button data-time="08:30" type="button">08:30</button>
+<button data-time="09:00" type="button">09:00</button>
+<button data-time="12:00" type="button">12:00</button>
+<button data-time="15:00" type="button">15:00</button>
+<button data-time="16:30" type="button">16:30</button>
+</div>
+</div>
+</div>
+<div class="form-group">
+<label for="fDetalle">Detalle *</label>
+<div class="dictation-field">
+<input id="fDetalle" maxlength="300" placeholder="Escriba o dicte el detalle" type="text"/>
+<button aria-label="Dictar detalle" class="field-mic-button" id="activityVoiceBtn" title="Dictar detalle" type="button">
+<svg aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<rect height="12" rx="4" width="8" x="8" y="2"></rect>
+<path d="M5 10a7 7 0 0 0 14 0"></path>
+<path d="M12 17v5"></path>
+<path d="M9 22h6"></path>
+</svg>
+</button>
+</div>
+<div class="field-helper" id="activityVoiceHint">Puede escribir el detalle o dictarlo con el micrófono.</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="fTipo">Tipo</label>
+<select id="fTipo">
+<option>Actividad</option>
+<option>Jurisdiccional</option>
+<option>Audiovisual</option>
+<option>Turno</option>
+<option>Efeméride</option>
+<option>Ausencias</option>
+<option>Otro</option>
+</select>
+</div>
+<div class="form-group">
+<label for="fEstado">Estado</label>
+<select id="fEstado">
+<option>Confirmada</option>
+<option>Por Confirmar</option>
+<option>Boletín</option>
+<option>Redes Sociales</option>
+<option>Pendiente</option>
+<option>Cancelada</option>
+<option>Sin estado</option>
+</select>
+</div>
+</div>
+<div class="form-group">
+<label for="fLugar">Lugar o enlace</label>
+<input id="fLugar" maxlength="250" placeholder="Ej.: Corte de Apelaciones, UCN, Ovalle o enlace" type="text"/>
+</div>
+<button class="btn-submit" id="btnGuardar" type="button">Guardar actividad</button>
+<button class="btn-cancel-modal" id="btnCancelarModal" type="button">Cancelar</button>
+<p aria-live="polite" class="form-msg" id="formMsg"></p>
+<div class="sync-note">Los cambios se sincronizan con la planilla del equipo de comunicaciones.</div>
+</div>
+</div>
+
+
+<!-- MODAL: Agregar / editar feriado -->
+<div aria-labelledby="holidayModalTitle" aria-modal="true" class="modal-overlay holiday-modal-overlay" id="holidayModal" role="dialog">
+  <div class="modal holiday-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-heading">
+      <div>
+        <h2 id="holidayModalTitle">Agregar feriado</h2>
+        <div class="modal-subtitle" id="holidayModalSubtitle">Registre únicamente una fecha oficialmente confirmada.</div>
+      </div>
+      <button aria-label="Cerrar" class="modal-close" id="btnCloseHolidayModal" type="button">✕</button>
+    </div>
+
+    <div class="holiday-form-notice">
+      <strong>Calendario controlado</strong>
+      <span>Los nacionales oficiales se revisan automáticamente en Gob.cl durante diciembre y hasta el 15 de enero. Los regionales y electorales se agregan únicamente de forma manual.</span>
+      <small class="holiday-auto-review-note">Revisión oficial automática · cada 24 horas</small>
+    </div>
+
+    <div class="form-group">
+      <label for="hFecha">Fecha *</label>
+      <input id="hFecha" type="date"/>
+    </div>
+    <div class="form-group">
+      <label for="hNombre">Nombre del feriado *</label>
+      <input id="hNombre" maxlength="180" placeholder="Ej.: Asunción de la Virgen" type="text"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="hTipo">Tipo</label>
+        <select id="hTipo">
+          <option value="Feriado nacional">Feriado nacional</option>
+          <option value="Feriado regional">Feriado regional</option>
+          <option value="Feriado electoral">Feriado electoral</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="hAlcance">Alcance</label>
+        <input id="hAlcance" maxlength="100" placeholder="Nacional" type="text"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="hFuente">Fuente oficial o referencia</label>
+      <input id="hFuente" maxlength="220" placeholder="Ej.: Gobierno de Chile, Ley N°…, SERVEL" type="text"/>
+      <div class="field-helper">Para fechas extraordinarias conviene dejar la referencia que las respalda.</div>
+    </div>
+    <button class="btn-submit holiday-save-button" id="btnGuardarFeriado" type="button">Guardar feriado</button>
+    <button class="btn-cancel-modal" id="btnCancelarFeriado" type="button">Cancelar</button>
+    <p aria-live="polite" class="form-msg" id="holidayFormMsg"></p>
+  </div>
+</div>
+
+<!-- MODAL: Eliminar feriado -->
+<div aria-labelledby="holidayDeleteTitle" aria-modal="true" class="modal-overlay" id="holidayDeleteModal" role="dialog">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-handle"></div>
+    <div class="modal-heading">
+      <div>
+        <h2 id="holidayDeleteTitle">Eliminar feriado</h2>
+        <div class="modal-subtitle">Solo se pueden eliminar registros administrados manualmente.</div>
+      </div>
+      <button aria-label="Cerrar" class="modal-close" id="btnCloseHolidayDelete" type="button">✕</button>
+    </div>
+    <p class="confirm-copy">¿Confirma eliminar <span class="confirm-activity" id="holidayDeleteName"></span> del calendario?</p>
+    <button class="btn-danger holiday-delete-confirm" id="btnConfirmHolidayDelete" type="button">Sí, eliminar feriado</button>
+    <button class="btn-secondary" id="btnCancelHolidayDelete" type="button">Mantener feriado</button>
+    <p aria-live="polite" class="form-msg" id="holidayDeleteMsg"></p>
+  </div>
+</div>
+
+<!-- MODAL: Selector amigable de hora -->
+<div aria-labelledby="timePickerTitle" aria-modal="true" class="modal-overlay time-picker-overlay" id="timePickerModal" role="dialog">
+<div class="modal time-picker-modal">
+<div class="modal-handle"></div>
+<div class="modal-heading">
+<div>
+<h2 id="timePickerTitle">Seleccionar hora</h2>
+<div class="modal-subtitle">Ajuste la hora en intervalos de cinco minutos.</div>
+</div>
+<button aria-label="Cerrar selector de hora" class="modal-close" id="btnCloseTimePicker" type="button">✕</button>
+</div>
+<div class="time-picker-display">
+<button aria-label="Restar quince minutos" class="time-adjust-button" id="timeMinus15" type="button">−15</button>
+<div class="time-number-fields">
+<label>
+<span>Hora</span>
+<input autocomplete="off" enterkeyhint="next" id="timePickerHour" inputmode="numeric" max="23" min="0" pattern="[0-9]*" type="number"/>
+</label>
+<strong>:</strong>
+<label>
+<span>Minutos</span>
+<input autocomplete="off" enterkeyhint="done" id="timePickerMinute" inputmode="numeric" max="59" min="0" pattern="[0-9]*" step="5" type="number"/>
+</label>
+</div>
+<button aria-label="Sumar quince minutos" class="time-adjust-button" id="timePlus15" type="button">+15</button>
+</div>
+<p class="time-picker-hint">Use −15, +15 o una hora frecuente. También puede tocar Hora o Minutos para escribir.</p>
+<div class="time-picker-presets" aria-label="Horas frecuentes">
+<button data-picker-time="08:00" type="button">08:00</button>
+<button data-picker-time="08:30" type="button">08:30</button>
+<button data-picker-time="09:00" type="button">09:00</button>
+<button data-picker-time="10:00" type="button">10:00</button>
+<button data-picker-time="12:00" type="button">12:00</button>
+<button data-picker-time="15:00" type="button">15:00</button>
+<button data-picker-time="16:30" type="button">16:30</button>
+<button data-picker-time="18:00" type="button">18:00</button>
+</div>
+<div class="time-picker-actions">
+<button class="time-clear-button" id="btnClearTime" type="button">Sin hora</button>
+<button class="time-cancel-button" id="btnCancelTimePicker" type="button">Cancelar</button>
+<button class="time-confirm-button" id="btnConfirmTime" type="button">Usar hora</button>
+</div>
+</div>
+</div>
+<!-- MODAL: Confirmar eliminación -->
+<div aria-labelledby="deleteModalTitle" aria-modal="true" class="modal-overlay" id="deleteModal" role="dialog">
+<div class="modal" style="max-width:500px">
+<div class="modal-handle"></div>
+<div class="modal-heading">
+<div>
+<h2 id="deleteModalTitle">🗑️ Eliminar actividad</h2>
+<div class="modal-subtitle">Esta acción retirará la actividad de la agenda y de la planilla.</div>
+</div>
+<button aria-label="Cerrar" class="modal-close" id="btnCloseDeleteModal" type="button">✕</button>
+</div>
+<p class="confirm-copy">¿Confirmas la eliminación de <span class="confirm-activity" id="deleteActivityName"></span>?</p>
+<button class="btn-danger" id="btnConfirmDelete" type="button">Sí, eliminar actividad</button>
+<button class="btn-secondary" id="btnCancelDelete" type="button">Mantener actividad</button>
+<p aria-live="polite" class="form-msg" id="deleteMsg"></p>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+
+<script src="config.js?v=102" defer></script>
+<script src="app.js?v=102" defer></script>
+</body>
+</html>
