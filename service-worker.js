@@ -1,10 +1,11 @@
-const CACHE_NAME = 'agenda-comunicaciones-shell-107';
+const CACHE_NAME = 'agenda-comunicaciones-shell-109';
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css?v=107',
-  './app.js?v=107',
-  './config.js?v=107',
+  './styles.css?v=109',
+  './app.js?v=109',
+  './voice-create.js?v=109',
+  './config.js?v=109',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -60,4 +61,13 @@ self.addEventListener('fetch', event => {
       return cached || network;
     })
   );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target=event.notification?.data?.url || self.registration.scope;
+  event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{
+    for(const client of list){if('focus' in client)return client.focus();}
+    return clients.openWindow?clients.openWindow(target):undefined;
+  }));
 });

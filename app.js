@@ -1,4 +1,4 @@
-// Agenda Comunicaciones · edición robusta y sincronización de filas
+// Agenda Comunicaciones · alternativa de creación por voz flexible + recordatorios 15 min
 const SCRIPT_URL = String(window.AGENDA_PRENSA_CONFIG?.scriptUrl || '').trim();
 
 let allEvents = [];
@@ -1024,6 +1024,7 @@ function resetActivityForm() {
   document.getElementById('fTipo').value='Actividad';
   document.getElementById('fEstado').value='Confirmada';
   document.getElementById('formMsg').textContent='';
+  hideVoiceCreatePreview();
 }
 
 function openActivityModal(mode,event=null) {
@@ -1063,6 +1064,40 @@ document.getElementById('btnCloseActivityModal').addEventListener('click',closeA
 
 activityModal.addEventListener('click',event=>{if(event.target===activityModal)closeActivityModal();});
 
+
+
+function hideVoiceCreatePreview(){const p=document.getElementById('voiceCreatePreview');if(p)p.hidden=true;}
+function voiceValueLabel(label,value){return value?`<span class="voice-preview-chip"><b>${escapeHTML(label)}</b>${escapeHTML(value)}</span>`:'';}
+function showVoiceCreatePreview(parsed){
+  const p=document.getElementById('voiceCreatePreview'),c=document.getElementById('voicePreviewChips'),t=document.getElementById('voicePreviewTranscript');if(!p||!c||!t)return;
+  const d=parsed.data||{};c.innerHTML=[voiceValueLabel('Fecha',d.FECHA),voiceValueLabel('Hora',d.HORA||'Sin hora'),voiceValueLabel('Tipo',d.TIPO),voiceValueLabel('Estado',d.ESTADO),voiceValueLabel('Lugar',d.LUGAR)].filter(Boolean).join('');
+  t.textContent=`“${parsed.raw}”`;p.hidden=false;
+}
+function applyVoiceCreateResult(parsed){
+  if(!parsed||parsed.intent!=='create'){showToast('No pude interpretar el dictado como una nueva actividad.');return false;}
+  openActivityModal('add');
+  const d=parsed.data||{};
+  document.getElementById('fFecha').value=d.FECHA?dateToInput(d.FECHA):'';
+  setActivityTime(d.HORA||'');
+  document.getElementById('fDetalle').value=d.DETALLE||'';
+  document.getElementById('fTipo').value=normalizeType(d.TIPO||'Actividad');
+  document.getElementById('fEstado').value=normalizeStatus(d.ESTADO||'Por Confirmar');
+  document.getElementById('fLugar').value=d.LUGAR||'';
+  showVoiceCreatePreview(parsed);
+
+  const missing=(parsed.missing||[]).map(item=>item==='fecha'?'fecha obligatoria':item==='detalle'?'detalle obligatorio':item);
+  const warnings=parsed.warnings||[];
+  const issues=[...missing,...warnings];
+  document.getElementById('formMsg').textContent=issues.length
+    ? `⚠️ Revise antes de guardar: ${issues.join(' · ')}`
+    : '✓ Dictado interpretado. Revise los campos y pulse Guardar actividad.';
+  return true;
+}
+function parseAndPreviewVoiceActivity(text){
+  if(!window.AgendaVoiceCreate){showToast('El intérprete de voz no está disponible.');return false;}
+  // Este flujo es exclusivo de “Crear por voz”: no exige una frase rígida como “Agenda…”.
+  return applyVoiceCreateResult(window.AgendaVoiceCreate.parse(text,{now:new Date(),forceCreate:true}));
+}
 
 function openCreateChoiceModal(){
   createChoiceModal?.classList.add('open');
@@ -1387,7 +1422,7 @@ document.getElementById('btnGuardar').addEventListener('click',async()=>{
       allEvents.push({...data,_row:Number(result.row)||tempRow});
       haptic([18,35,18]); showToast('✓ Actividad creada');
     }
-    closeActivityModal(); updateHeaderStats(); buildTabs(); render(); scheduleRefresh();
+    closeActivityModal(); updateHeaderStats(); buildTabs(); render(); scheduleActivityReminders(); sweepDueReminders(); scheduleRefresh();
   } catch (error) {
     message.textContent=`⚠️ ${error.message||'No fue posible sincronizar con la planilla.'}`;
   } finally {
@@ -1692,6 +1727,8 @@ document.getElementById('clearSearch').addEventListener('click',()=>{searchInput
 const activityVoiceBtn=document.getElementById('activityVoiceBtn');
 const activityVoiceHint=document.getElementById('activityVoiceHint');
 const voiceBtn=document.getElementById('voiceBtn');
+const createVoiceChoice=document.getElementById('createVoiceChoice');
+const voiceRedictateButton=document.getElementById('voiceRedictateButton');
 const SpeechRecognitionAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
 const speechUA=navigator.userAgent||'';
 const speechIsIOS=/iPad|iPhone|iPod/.test(speechUA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -1831,6 +1868,7 @@ function createSpeechController({button,onPending,onListening,onTranscript,onErr
 
 let activityDictationRecognition=null;
 let searchSpeechController=null;
+let createActivitySpeechController=null;
 
 if(!SpeechRecognitionAPI){
   activityVoiceBtn.disabled=true;
@@ -1839,6 +1877,7 @@ if(!SpeechRecognitionAPI){
   voiceBtn.disabled=true;
   voiceBtn.classList.add('unavailable');
   voiceBtn.title='Voz no disponible en este navegador';
+  if(createVoiceChoice){createVoiceChoice.disabled=true;createVoiceChoice.classList.add('unavailable');}
 }else{
   activityDictationRecognition=createSpeechController({
     button:activityVoiceBtn,
@@ -1865,15 +1904,76 @@ if(!SpeechRecognitionAPI){
     onError:message=>showToast(message)
   });
 
+  createActivitySpeechController=createSpeechController({
+    button:createVoiceChoice,
+    onPending:()=>showToast('Preparando creación por voz…'),
+    onListening:()=>showToast('🎙️ Diga la actividad con naturalidad; puede incluir fecha, hora, lugar, tipo y estado'),
+    onTranscript:text=>{closeCreateChoiceModal();parseAndPreviewVoiceActivity(text);},
+    onError:message=>showToast(message)
+  });
+
   activityVoiceBtn.addEventListener('click',()=>activityDictationRecognition.start());
   voiceBtn.addEventListener('click',()=>searchSpeechController.start());
+  createVoiceChoice?.addEventListener('click',()=>createActivitySpeechController.start());
+  voiceRedictateButton?.addEventListener('click',()=>{closeActivityModal();openCreateChoiceModal();setTimeout(()=>createActivitySpeechController.start(),180);});
 }
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='hidden') return;
   activityDictationRecognition?.stop?.();
   searchSpeechController?.stop?.();
+  createActivitySpeechController?.stop?.();
 });
+
+
+const REMINDER_STORAGE_KEY='agenda-comunicaciones-reminders-15';
+const REMINDER_SENT_KEY='agenda-comunicaciones-reminders-sent-v1';
+const REMINDER_MINUTES=15;
+const reminderToggle=document.getElementById('reminderToggle');
+const reminderTimers=new Map();
+function remindersEnabled(){return localStorage.getItem(REMINDER_STORAGE_KEY)==='on'&&typeof Notification!=='undefined'&&Notification.permission==='granted';}
+function syncReminderToggle(){if(!reminderToggle)return;const on=remindersEnabled();reminderToggle.classList.toggle('active',on);reminderToggle.setAttribute('aria-pressed',on?'true':'false');reminderToggle.title=on?'Recordatorios 15 min activados':'Activar recordatorios 15 min';}
+function readSentReminders(){try{return JSON.parse(localStorage.getItem(REMINDER_SENT_KEY)||'{}')||{};}catch{return {};}}
+function writeSentReminders(v){try{localStorage.setItem(REMINDER_SENT_KEY,JSON.stringify(v));}catch{}}
+function reminderEventKey(e){return[e.FECHA,e.HORA,e.TIPO,e.DETALLE,e.LUGAR].join('|');}
+function eventStartDateTime(e){const d=parseDate(e.FECHA),t=normalizeTimeValue(e.HORA);if(!d||!t)return null;const[h,m]=t.split(':').map(Number);return new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m,0,0);}
+async function showAgendaNotification(title,body,tag){
+ if(typeof Notification==='undefined'||Notification.permission!=='granted')return false;
+ try{const reg=await navigator.serviceWorker?.ready;if(!reg?.showNotification)return false;await reg.showNotification(title,{body,tag,renotify:false,icon:'icons/icon-192.png',badge:'icons/icon-192.png',data:{url:location.href.split('#')[0]}});return true;}catch(e){console.warn('Notification',e);return false;}
+}
+async function fireActivityReminder(e,{force=false}={}){
+ if(!force&&!remindersEnabled())return false;const start=eventStartDateTime(e);if(!start)return false;const key=reminderEventKey(e),sent=readSentReminders();if(!force&&sent[key])return false;
+ const mins=Math.max(0,Math.round((start-Date.now())/60000)),when=mins>=14?'en 15 minutos':mins>1?`en ${mins} minutos`:mins===1?'en 1 minuto':'ahora';
+ const body=`${formatTime(e.HORA)} · ${expandTeamCodes(e.DETALLE)}${e.LUGAR?` · ${expandTeamCodes(e.LUGAR)}`:''}`;
+ const shown=await showAgendaNotification(`Agenda Comunicaciones · ${when}`,body,`agenda-com-${key}`);
+ if(shown&&!force){
+   sent[key]=Date.now();
+   const cutoff=Date.now()-7*24*60*60*1000;
+   Object.keys(sent).forEach(item=>{if(Number(sent[item])<cutoff)delete sent[item];});
+   writeSentReminders(sent);
+ }
+ return shown;
+}
+function clearReminderTimers(){reminderTimers.forEach(clearTimeout);reminderTimers.clear();}
+function scheduleActivityReminders(){
+ clearReminderTimers();if(!remindersEnabled())return;const now=Date.now(),horizon=now+86400000;
+ allEvents.forEach(e=>{const start=eventStartDateTime(e);if(!start||getStatus(e)==='Cancelada')return;const due=start.getTime()-REMINDER_MINUTES*60000;if(due<=now||due>horizon)return;const key=reminderEventKey(e);reminderTimers.set(key,setTimeout(()=>{reminderTimers.delete(key);fireActivityReminder(e);},due-now));});
+}
+async function sweepDueReminders(){if(!remindersEnabled())return;const now=Date.now();for(const e of allEvents){if(getStatus(e)==='Cancelada')continue;const start=eventStartDateTime(e);if(!start)continue;const diff=start-now;if(diff<=REMINDER_MINUTES*60000&&diff>=0)await fireActivityReminder(e);}}
+async function enableActivityReminders(){
+ if(typeof Notification==='undefined'||!('serviceWorker'in navigator)){showToast('Este navegador no admite recordatorios de la PWA.');return;}
+ if(speechIsIOS&&!speechIsStandalone){showToast('En iPhone, instale la app en la pantalla de inicio antes de activar avisos.');return;}
+ let p=Notification.permission;if(p!=='granted'){try{p=await Notification.requestPermission();}catch{p='denied';}}
+ if(p!=='granted'){localStorage.removeItem(REMINDER_STORAGE_KEY);syncReminderToggle();showToast('No se autorizó el envío de notificaciones.');return;}
+ localStorage.setItem(REMINDER_STORAGE_KEY,'on');syncReminderToggle();scheduleActivityReminders();
+ await showAgendaNotification('Agenda Comunicaciones','Recordatorios activados · aviso 15 minutos antes de cada actividad con hora.','agenda-com-test');
+ showToast('🔔 Recordatorios de 15 minutos activados');
+}
+function disableActivityReminders(){localStorage.removeItem(REMINDER_STORAGE_KEY);clearReminderTimers();syncReminderToggle();showToast('Recordatorios desactivados');}
+reminderToggle?.addEventListener('click',()=>remindersEnabled()?disableActivityReminders():enableActivityReminders());
+syncReminderToggle();setInterval(sweepDueReminders,30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){syncReminderToggle();scheduleActivityReminders();sweepDueReminders();}});
+window.addEventListener('focus',()=>{scheduleActivityReminders();sweepDueReminders();});
 
 function showToast(message) {
   const toast=document.getElementById('toast'); toast.textContent=message; toast.classList.add('show');
@@ -2030,7 +2130,7 @@ async function loadData({silent=false}={}) {
         {FECHA:key(4),'DÍA':'',HORA:'',TIPO:'Turno',DETALLE:'PH',LUGAR:'',ESTADO:'Sin estado',_row:6}
       ];
       lastSuccessfulLoadAt=Date.now();
-      updateHeaderStats();buildTabs();render();dismissLaunchScreen();return;
+      updateHeaderStats();buildTabs();render();scheduleActivityReminders();sweepDueReminders();dismissLaunchScreen();return;
     }
 
     if(!SCRIPT_URL) throw new Error('La aplicación todavía no tiene configurada la URL de Apps Script.');
@@ -2049,7 +2149,7 @@ async function loadData({silent=false}={}) {
       _row:Number(event._row||event.fila)||0
     })).filter(event=>event.FECHA&&event.DETALLE);
     lastSuccessfulLoadAt=Date.now();
-    updateHeaderStats();buildTabs();render();dismissLaunchScreen();
+    updateHeaderStats();buildTabs();render();scheduleActivityReminders();sweepDueReminders();dismissLaunchScreen();
     if(silent) showToast('↻ Agenda sincronizada');
   } catch(error) {
     dismissLaunchScreen();

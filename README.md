@@ -1,69 +1,115 @@
-# Agenda Comunicaciones 1.0.7 — edición robusta
+# Agenda Comunicaciones 1.0.9 — versión auditada
 
-## Problema verificado
+Esta versión mantiene la Agenda Comunicaciones existente y agrega dos funciones opcionales:
 
-Agenda Comunicaciones tenía el mismo defecto lógico detectado en Agenda Presidenta.
+1. **Crear por voz**, como una alternativa adicional al ingreso manual.
+2. **Recordatorio local 15 minutos antes**, activable mediante la campana del encabezado.
 
-El backend utilizaba:
+## Importante: no se reemplaza lo que ya funciona
 
-`horaOriginal || horaNueva`
+El flujo manual continúa intacto:
 
-Cuando la hora original estaba vacía, reemplazaba ese valor por la hora nueva
-antes de localizar la fila.
+- `+` → `Nueva actividad`
+- edición
+- eliminación
+- cambio de estado
+- calendario
+- búsqueda
+- dictado del campo DETALLE
+- feriados
+- tema claro/oscuro
 
-Ejemplo real de la planilla:
+La creación completa por voz aparece como una tercera alternativa dentro del botón `+`.
 
-- fila 4
-- 03/08/2026
-- Audiovisual
-- Short sin cuña visita a radio
-- hora original: vacía
+El micrófono de búsqueda sigue dedicado a consultas y navegación; no se reutiliza para crear actividades. Esto evita que una consulta como `Agenda del viernes` se confunda con una orden de creación.
 
-Si se intentaba agregarle una hora, el backend podía buscar esa actividad por la
-hora nueva y no encontrarla.
+## Crear por voz
 
-## Corrección
+Ruta:
 
-Ahora los valores originales vacíos se preservan expresamente.
+`+` → `Crear por voz`
 
-La identificación de filas usa:
+En este modo no es obligatorio comenzar diciendo “Agenda…”. Puede dictarse de forma natural, por ejemplo:
 
-1. número de fila real;
-2. fecha + hora original + detalle;
-3. si no existe coincidencia exacta, fecha + detalle únicamente cuando hay una
-   sola fila posible.
+`Reunión con el pleno para el 15 de agosto de 2026 a la una y media de la tarde en sala número 1, participarán todos los ministros.`
 
-Si existen varias coincidencias, no modifica ninguna.
+La app intenta interpretar:
 
-## Sincronización
+- FECHA
+- HORA
+- TIPO
+- DETALLE
+- LUGAR
+- ESTADO
 
-Agenda Comunicaciones ya utilizaba Apps Script para leer y escribir, por lo que
-no requería la migración estructural realizada en Agenda Presidenta.
+La planilla de Comunicaciones no tiene columna PARTICIPANTES. Cuando se detecta una expresión explícita como `participarán`, `a cargo de` o `responsable`, esa información se conserva dentro de DETALLE.
 
-Se reforzó:
+### Seguridad
 
-- `listar` con esquema `comunicaciones-live-v1`;
-- versión de backend `1.0.7`;
-- fila real tras editar;
-- fila real tras cambiar estado.
+La voz **nunca guarda automáticamente**.
 
-La interfaz detecta si se publica por error un Code.gs antiguo.
+Después del reconocimiento:
 
-## Prueba de regresión
+1. abre el mismo formulario utilizado por el ingreso manual;
+2. completa solo los campos reconocidos;
+3. muestra el texto que fue escuchado;
+4. permite modificar cualquier campo;
+5. exige pulsar `Guardar actividad`.
 
-Se reprodujo el caso de una actividad Audiovisual en fila 4 con hora original
-vacía y edición hacia una nueva hora.
+Si no se reconoce una fecha, el campo FECHA queda vacío. No se inventa “hoy” ni otra fecha y el formulario no permite guardar hasta corregirla.
 
-Resultado:
+Por defecto, las actividades creadas por voz quedan `Por Confirmar`, salvo que el dictado diga expresamente otro estado.
 
-`OK fila=4`
+## Lenguaje flexible probado
 
-## Instalación
+El intérprete acepta, entre otros:
 
-Esta versión requiere actualizar ambos lados.
+- hoy, mañana, pasado mañana;
+- lunes, viernes, próximo lunes, este viernes;
+- `15/08/2026`, `15-08-2026`, `2026-11-05`;
+- `15 de agosto de 2026`;
+- `quince de agosto de dos mil veintiséis`;
+- `primero de septiembre`;
+- `13:30`, `13.30`, `14 20`;
+- `13 horas con 30 minutos`;
+- `trece treinta`;
+- `una y media de la tarde`;
+- `cuatro y cuarto de la tarde`;
+- `1:30 de la tarde`;
+- `4:05 p m`;
+- `sin hora`;
+- sala, oficina, tribunal, radio, auditorio, Zoom, Teams, Meet;
+- Confirmada, Por Confirmar, Pendiente, Cancelada, Boletín y Redes Sociales;
+- Actividad, Jurisdiccional, Audiovisual, Turno, Efeméride y Ausencias.
 
-1. Primero reemplazar Code.gs en Apps Script y actualizar la implementación
-   existente.
-2. Después subir los archivos web 1.0.7 a GitHub.
+También hay inferencias conservadoras:
 
-La URL /exec no cambia.
+- `grabación`, `video`, `reel`, `short` → Audiovisual;
+- `sentencia`, `audiencia`, `alegatos` → Jurisdiccional.
+
+Estas inferencias solo completan TIPO. El texto original se conserva en DETALLE para que la usuaria pueda revisarlo.
+
+## Recordatorio 15 minutos antes
+
+La campana del encabezado está desactivada por defecto.
+
+Al activarla:
+
+- solicita permiso de notificaciones;
+- envía una notificación de prueba;
+- programa un aviso 15 minutos antes de actividades que tengan hora;
+- ignora actividades Canceladas;
+- ignora actividades sin hora;
+- evita repetir el mismo aviso en el dispositivo.
+
+Esta primera versión utiliza recordatorios locales de la PWA. Es apropiada para probar la experiencia, pero **no garantiza** el aviso si el sistema operativo ha cerrado completamente la PWA. Para esa garantía se requiere una segunda fase con Web Push/FCM.
+
+## Backend
+
+`Code.gs` es exactamente el backend 1.0.7 de edición robusta. No se modificó para agregar la voz ni los recordatorios.
+
+Por lo tanto, si Apps Script 1.0.7 ya está desplegado, para pasar de 1.0.7 a 1.0.9 basta actualizar los archivos web de GitHub.
+
+## Validación
+
+La auditoría completa se encuentra en `AUDITORIA_1.0.9.md`.
