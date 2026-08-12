@@ -1,82 +1,69 @@
-# Agenda Comunicaciones 1.0.6 — seguridad de escritura en Google Sheets
+# Agenda Comunicaciones 1.0.7 — edición robusta
 
-## Auditoría realizada
+## Problema verificado
 
-Se revisó el backend de Agenda Comunicaciones buscando el mismo tipo de error
-reportado en Agenda Presidenta.
+Agenda Comunicaciones tenía el mismo defecto lógico detectado en Agenda Presidenta.
 
-### Problema 1 — setNumberFormat
+El backend utilizaba:
 
-Se encontraron 7 operaciones:
+`horaOriginal || horaNueva`
 
-`setNumberFormat('dd/MM/yyyy')`
+Cuando la hora original estaba vacía, reemplazaba ese valor por la hora nueva
+antes de localizar la fila.
 
-Estas podían producir el mensaje:
+Ejemplo real de la planilla:
 
-`No puedes configurar el formato de número de las celdas de una columna con texto.`
+- fila 4
+- 03/08/2026
+- Audiovisual
+- Short sin cuña visita a radio
+- hora original: vacía
 
-Se eliminaron las 7.
+Si se intentaba agregarle una hora, el backend podía buscar esa actividad por la
+hora nueva y no encontrarla.
 
-La corrección cubre:
+## Corrección
 
-- crear actividad;
-- editar actividad;
-- crear feriado;
-- editar feriado;
-- importar/actualizar feriados oficiales;
-- crear nuevas filas de feriados oficiales;
-- creación inicial de `FERIADOS_CHILE`.
+Ahora los valores originales vacíos se preservan expresamente.
 
-### Problema 2 — copiar formato de la fila anterior
+La identificación de filas usa:
 
-Al crear una actividad se ejecutaba:
+1. número de fila real;
+2. fecha + hora original + detalle;
+3. si no existe coincidencia exacta, fecha + detalle únicamente cuando hay una
+   sola fila posible.
 
-`copyPreviousRowFormat_`
+Si existen varias coincidencias, no modifica ninguna.
 
-Esa operación no es necesaria para la aplicación y puede entrar en conflicto
-con una tabla de Google Sheets que tenga columnas tipadas.
+## Sincronización
 
-Se eliminó también esa copia de formato.
+Agenda Comunicaciones ya utilizaba Apps Script para leer y escribir, por lo que
+no requería la migración estructural realizada en Agenda Presidenta.
 
-## Resultado
+Se reforzó:
 
-El backend ahora:
+- `listar` con esquema `comunicaciones-live-v1`;
+- versión de backend `1.0.7`;
+- fila real tras editar;
+- fila real tras cambiar estado.
 
-- escribe únicamente los valores;
-- normaliza FECHA como `dd/MM/yyyy`;
-- normaliza HORA como `HH:mm`;
-- respeta los tipos/formato que ya tenga configurada la planilla;
-- no modifica el formato de ninguna columna de la agenda;
-- mantiene la búsqueda robusta de filas para editar/eliminar.
+La interfaz detecta si se publica por error un Code.gs antiguo.
 
-Se realizó además una auditoría automática y el `Code.gs` final no contiene
-ninguna llamada a:
+## Prueba de regresión
 
-- `setNumberFormat`
-- `setNumberFormats`
-- `copyFormatToRange`
+Se reprodujo el caso de una actividad Audiovisual en fila 4 con hora original
+vacía y edición hacia una nueva hora.
 
-## Qué no cambia
+Resultado:
 
-No se modificaron:
-
-- diseño de la aplicación;
-- GitHub Pages;
-- URL de Apps Script;
-- planilla;
-- lógica de MM / PH;
-- voz;
-- calendario;
-- feriados;
-- creación, edición y eliminación desde la interfaz.
+`OK fila=4`
 
 ## Instalación
 
-Esta actualización es exclusivamente de backend:
+Esta versión requiere actualizar ambos lados.
 
-1. abra Apps Script de Agenda Comunicaciones;
-2. reemplace el contenido por el nuevo `Code.gs`;
-3. actualice la implementación existente;
-4. conserve la misma URL `/exec`.
+1. Primero reemplazar Code.gs en Apps Script y actualizar la implementación
+   existente.
+2. Después subir los archivos web 1.0.7 a GitHub.
 
-No es necesario subir nuevos archivos a GitHub para esta corrección.
+La URL /exec no cambia.

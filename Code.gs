@@ -9,6 +9,7 @@ const FIRST_DATA_ROW = 2;
 const COLUMN_COUNT = 7;
 const HOLIDAY_COLUMN_COUNT = 6;
 const AGENDA_TIME_ZONE = 'America/Santiago';
+const BACKEND_VERSION = '1.0.7';
 const HOLIDAY_REVIEW_HANDLER = 'revisionAutomaticaFeriados';
 const HOLIDAY_REVIEW_START_MONTH = 12;
 const HOLIDAY_REVIEW_END_DAY_JANUARY = 15;
@@ -71,7 +72,7 @@ function doGet(e) {
       }
 
       case 'ping':
-        result = { ok: true, action: 'ping', message: 'Agenda Comunicaciones API activa' };
+        result = { ok: true, action: 'ping', version: BACKEND_VERSION, message: 'Agenda Comunicaciones API activa' };
         break;
 
       default:
@@ -90,7 +91,7 @@ function doGet(e) {
 function listEvents_() {
   const sheet = getAgendaSheet_();
   const lastRow = sheet.getLastRow();
-  if (lastRow < FIRST_DATA_ROW) return { ok: true, action: 'listar', eventos: [] };
+  if (lastRow < FIRST_DATA_ROW) return { ok: true, action: 'listar', schema: 'comunicaciones-live-v1', version: BACKEND_VERSION, eventos: [] };
 
   const values = sheet.getRange(FIRST_DATA_ROW, 1, lastRow - FIRST_DATA_ROW + 1, COLUMN_COUNT).getDisplayValues();
   const eventos = values.map(function(row, index) {
@@ -108,7 +109,7 @@ function listEvents_() {
     return item.FECHA && item.DETALLE;
   });
 
-  return { ok: true, action: 'listar', eventos: eventos };
+  return { ok: true, action: 'listar', schema: 'comunicaciones-live-v1', version: BACKEND_VERSION, eventos: eventos };
 }
 
 function createEvent_(sheet, params) {
@@ -134,9 +135,9 @@ function updateEvent_(sheet, params) {
 
   const row = resolveRow_(sheet, {
     fila: params.fila,
-    fecha: params.fechaOriginal || params.fecha,
-    hora: params.horaOriginal || params.hora,
-    detalle: params.detalleOriginal || params.detalle
+    fecha: originalParam_(params, 'fechaOriginal', 'fecha'),
+    hora: originalParam_(params, 'horaOriginal', 'hora'),
+    detalle: originalParam_(params, 'detalleOriginal', 'detalle')
   }, true);
 
   sheet.getRange(row, 1, 1, COLUMN_COUNT).setValues([buildRow_(params)]);
@@ -172,6 +173,15 @@ function buildRow_(params) {
   ];
 }
 
+
+function hasOwnParam_(params, key) {
+  return Object.prototype.hasOwnProperty.call(params || {}, key);
+}
+
+function originalParam_(params, originalKey, currentKey) {
+  return hasOwnParam_(params, originalKey) ? params[originalKey] : params[currentKey];
+}
+
 function resolveRow_(sheet, params, verifyIdentity) {
   const lastRow = sheet.getLastRow();
   if (lastRow < FIRST_DATA_ROW) throw new Error('La agenda no contiene actividades.');
@@ -193,18 +203,33 @@ function resolveRow_(sheet, params, verifyIdentity) {
   const targetTime = normalizeTime_(params.hora);
   const targetDetail = normalizeText_(params.detalle);
 
+  const exactMatches = [];
+  const relaxedMatches = [];
+
   for (let index = 0; index < values.length; index++) {
     const rowDate = normalizeDate_(values[index][0]);
     const rowTime = normalizeTime_(values[index][2]);
     const rowDetail = normalizeText_(values[index][4]);
+    const rowNumber = FIRST_DATA_ROW + index;
 
-    if (
-      rowDate === targetDate &&
-      rowTime === targetTime &&
-      rowDetail === targetDetail
-    ) {
-      return FIRST_DATA_ROW + index;
+    if (rowDate === targetDate && rowDetail === targetDetail) {
+      relaxedMatches.push(rowNumber);
+      if (rowTime === targetTime) exactMatches.push(rowNumber);
     }
+  }
+
+  if (exactMatches.length === 1) return exactMatches[0];
+
+  // Rescate seguro: permite modificar la hora si la actividad es única
+  // para esa fecha y detalle.
+  if (exactMatches.length === 0 && relaxedMatches.length === 1) {
+    return relaxedMatches[0];
+  }
+
+  if (exactMatches.length > 1 || relaxedMatches.length > 1) {
+    throw new Error(
+      'Hay más de una actividad coincidente. Actualiza la agenda y vuelve a seleccionar la actividad.'
+    );
   }
 
   throw new Error(
@@ -288,8 +313,8 @@ function updateHoliday_(params) {
   const sheet = ensureHolidaySheet_();
   const row = resolveHolidayRow_(sheet, {
     fila: params.fila,
-    fecha: params.fechaOriginal || params.fecha,
-    nombre: params.nombreOriginal || params.nombre
+    fecha: originalParam_(params, 'fechaOriginal', 'fecha'),
+    nombre: originalParam_(params, 'nombreOriginal', 'nombre')
   });
 
   assertHolidayEditable_(sheet, row);

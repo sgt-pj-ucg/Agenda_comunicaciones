@@ -1,10 +1,10 @@
-const CACHE_NAME = 'agenda-comunicaciones-shell-105';
+const CACHE_NAME = 'agenda-comunicaciones-shell-107';
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css?v=105',
-  './app.js?v=105',
-  './config.js?v=105',
+  './styles.css?v=107',
+  './app.js?v=107',
+  './config.js?v=107',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

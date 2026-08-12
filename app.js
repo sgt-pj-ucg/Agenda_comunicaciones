@@ -1,4 +1,4 @@
-// Agenda Comunicaciones · Corte de Apelaciones de La Serena
+// Agenda Comunicaciones · edición robusta y sincronización de filas
 const SCRIPT_URL = String(window.AGENDA_PRENSA_CONFIG?.scriptUrl || '').trim();
 
 let allEvents = [];
@@ -941,7 +941,8 @@ function openStatusDropdown(pill,event) {
     closeDropdown();
     showToast('Guardando estado…');
     try {
-      await sendScriptAction('estado',{fila:event._row,fecha:event.FECHA,hora:event.HORA,detalle:event.DETALLE,estado:newStatus});
+      const result=await sendScriptAction('estado',{fila:event._row,fecha:event.FECHA,hora:event.HORA,detalle:event.DETALLE,estado:newStatus});
+      event._row=Number(result.row)||event._row;
       event.ESTADO=newStatus;
       updateHeaderStats(); buildTabs(); render();
       haptic(18); showToast(`✓ Estado actualizado: ${newStatus}`);
@@ -1369,12 +1370,13 @@ document.getElementById('btnGuardar').addEventListener('click',async()=>{
   try {
     if (editingEvent) {
       const original={...editingEvent};
-      await sendScriptAction('editar',{
+      const result=await sendScriptAction('editar',{
         fila:original._row,fechaOriginal:original.FECHA,horaOriginal:original.HORA,detalleOriginal:original.DETALLE,
         fecha:data.FECHA,dia:data['DÍA'],hora:data.HORA,tipo:data.TIPO,detalle:data.DETALLE,
         lugar:data.LUGAR,estado:data.ESTADO
       });
       Object.assign(editingEvent,data);
+      editingEvent._row=Number(result.row)||editingEvent._row;
       haptic([18,35,18]); showToast('✓ Actividad actualizada');
     } else {
       const result=await sendScriptAction('nueva',{
@@ -1467,7 +1469,7 @@ document.getElementById('btnConfirmDelete').addEventListener('click',async()=>{
       resolved=await refreshAndResolveEvent(item);
       if(!resolved) throw firstError;
 
-      // Tras actualizar desde el CSV, la fila corresponde a la posición real
+      // Tras actualizar desde Apps Script, la fila corresponde a la posición real
       // de la planilla. El envío exclusivo de la fila mantiene compatibilidad
       // con implementaciones anteriores de Apps Script.
       await sendScriptAction('eliminar',{fila:resolved._row});
@@ -2033,7 +2035,10 @@ async function loadData({silent=false}={}) {
 
     if(!SCRIPT_URL) throw new Error('La aplicación todavía no tiene configurada la URL de Apps Script.');
     const payload=await sendScriptAction('listar');
-    allEvents=(payload.eventos||[]).map(event=>({
+    if(payload?.schema!=='comunicaciones-live-v1'||!Array.isArray(payload?.eventos)){
+      throw new Error('La implementación de Apps Script debe actualizarse a Agenda Comunicaciones 1.0.7.');
+    }
+    allEvents=payload.eventos.map(event=>({
       FECHA:normalizeDateKey(event.FECHA||event.fecha),
       'DÍA':event['DÍA']||event.dia||'',
       HORA:normalizeTimeValue(event.HORA||event.hora),
