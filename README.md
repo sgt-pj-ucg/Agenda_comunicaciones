@@ -1,14 +1,18 @@
-# Agenda Comunicaciones 1.1.2 — Voz asistida limpia
+# Agenda Comunicaciones 1.1.3 — corrección definitiva del eco Android
 
-Corrección focalizada del módulo “Crear por voz”. El formulario manual, backend, edición, estados, calendario, feriados y recordatorios se mantienen.
+Esta versión corrige el problema de repetición observado al dictar en
+Android/Chrome.
 
-## Cambios
-- Nueva barra moderna “mantener pulsado para hablar”.
-- Transcripción reconstruida por hipótesis en vez de concatenar parciales.
-- Reconciliación anti-eco entre reinicios del reconocimiento de Android/Chrome.
-- Actividad, lugar y participantes se identifican y muestran separados.
-- Soporte de lugares como “primera sala de la Corte”, “la segunda sala”, “sala número 1”, Zoom, etc.
-- Participantes tienen un campo de revisión propio en el flujo de voz; al guardar se conservan dentro de DETALLE porque la planilla institucional no tiene columna PARTICIPANTES.
-- La transcripción visual tiene altura limitada para que nunca vuelva a deformar la tarjeta/calendario.
+### Cambios
+- reconstrucción correcta de hipótesis acumulativas de Web Speech;
+- barrera anti-eco antes de abrir el formulario;
+- mayor margen al soltar el botón para recibir la última frase;
+- Push-to-Talk visualmente reforzado;
+- dictado original plegado en la pantalla de revisión.
 
-No requiere cambios en Code.gs si ya está instalado el backend 1.0.7.
+### Sin cambios
+No se modificaron Code.gs, config.js, manifest, iconos ni la estructura de la
+planilla. La creación manual, edición, eliminación, estados, calendario,
+búsqueda, feriados y recordatorio de 15 minutos siguen presentes.
+
+Si Code.gs 1.0.7 ya está desplegado, esta actualización es solo de GitHub.

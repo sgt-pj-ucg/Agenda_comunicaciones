@@ -5189,3 +5189,110 @@ body.voice-capture-open{overflow:hidden}
 @media(max-width:759px){.voice-assistant-modal{padding:12px 14px max(15px,env(safe-area-inset-bottom))!important}.voice-command-shell{padding-top:12px}.voice-talk-bar{min-height:76px;border-radius:20px}.voice-talk-copy strong{font-size:9.7px}.voice-talk-copy small{font-size:8.7px}.voice-transcript-card{max-height:112px}.voice-detected-grid-v2{gap:6px}.voice-capture-actions{grid-template-columns:.85fr 1.15fr}}
 @media(max-width:380px){.voice-talk-bar{grid-template-columns:43px minmax(0,1fr) 42px;padding:9px 10px}.voice-talk-icon{width:40px;height:40px;border-radius:13px}.voice-talk-copy{padding:0 8px}.voice-talk-copy strong{font-size:9px}.voice-talk-meter{gap:2px}.voice-detected-item{padding:6px 7px}}
 @media(prefers-reduced-motion:reduce){.voice-talk-bar.is-pressed .voice-talk-meter i{animation:none!important}}
+
+
+/* ==========================================================================
+   Agenda Comunicaciones 1.1.3 · Push-to-talk premium + revisión compacta
+   ========================================================================== */
+.voice-talk-bar{
+  min-height:84px;
+  border-radius:24px;
+  border:1px solid color-mix(in srgb,var(--voice-accent) 46%,var(--v5-line));
+  background:
+    radial-gradient(circle at 13% 50%,color-mix(in srgb,var(--voice-accent) 14%,transparent),transparent 27%),
+    linear-gradient(135deg,color-mix(in srgb,var(--voice-accent) 8%,var(--v5-card)),color-mix(in srgb,var(--voice-accent-2) 8%,var(--v5-card)));
+  box-shadow:0 15px 40px rgba(4,35,55,.17),inset 0 1px 0 rgba(255,255,255,.065);
+}
+.voice-talk-bar::after{
+  content:"";
+  position:absolute;
+  inset:1px;
+  border-radius:23px;
+  pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+}
+.voice-talk-icon{
+  width:48px!important;
+  height:48px!important;
+  border-radius:16px!important;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--voice-accent) 17%,var(--v5-surface)),color-mix(in srgb,var(--voice-accent-2) 9%,var(--v5-surface)))!important;
+  border:1px solid color-mix(in srgb,var(--voice-accent) 42%,var(--v5-line))!important;
+  box-shadow:0 8px 20px rgba(8,87,100,.13),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+.voice-talk-copy strong{
+  font-size:10.6px!important;
+  letter-spacing:.075em!important;
+}
+.voice-talk-copy small{
+  margin-top:3px;
+  font-size:9.2px!important;
+}
+.voice-talk-meter{
+  padding:0 4px;
+  border-radius:12px;
+  background:color-mix(in srgb,var(--voice-accent) 5%,transparent);
+}
+.voice-talk-bar.is-pressed{
+  border-color:rgba(84,236,216,.92);
+  color:#fff;
+  background:
+    radial-gradient(circle at 14% 50%,rgba(121,255,233,.23),transparent 29%),
+    linear-gradient(125deg,#0f6d78 0%,#0a596b 46%,#0b455e 100%);
+  box-shadow:
+    0 0 0 4px rgba(60,222,201,.10),
+    0 18px 44px rgba(5,91,105,.28),
+    inset 0 1px 0 rgba(255,255,255,.12);
+}
+.voice-talk-bar.is-pressed .voice-talk-copy strong,
+.voice-talk-bar.is-pressed .voice-talk-copy small{
+  color:#fff!important;
+}
+.voice-talk-bar.is-pressed .voice-talk-meter{
+  background:rgba(255,255,255,.08);
+}
+.voice-talk-bar.is-pressed .voice-talk-meter i{
+  background:#dffff8!important;
+}
+.voice-talk-bar.is-pressed .voice-talk-icon{
+  background:linear-gradient(145deg,#51e4cd,#1ab4bd)!important;
+  box-shadow:0 0 0 7px rgba(100,244,224,.10),0 9px 24px rgba(0,26,40,.25)!important;
+}
+
+.voice-original-details{
+  margin-top:10px;
+  border-top:1px solid var(--v5-line);
+  padding-top:8px;
+}
+.voice-original-details summary{
+  cursor:pointer;
+  color:var(--v5-muted);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.02em;
+  list-style:none;
+}
+.voice-original-details summary::-webkit-details-marker{display:none;}
+.voice-original-details summary::before{
+  content:"▸";
+  display:inline-block;
+  margin-right:6px;
+  color:#2dc7c6;
+  transition:transform .15s ease;
+}
+.voice-original-details[open] summary::before{transform:rotate(90deg);}
+.voice-original-details .voice-preview-transcript{
+  margin-top:8px;
+  max-height:88px;
+  overflow:auto;
+  padding:8px 9px;
+  border:1px solid var(--v5-line);
+  border-radius:10px;
+  background:color-mix(in srgb,var(--v5-card) 86%,transparent);
+  font-size:9px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+@media(max-width:759px){
+  .voice-talk-bar{min-height:82px;border-radius:22px;}
+  .voice-talk-bar::after{border-radius:21px;}
+}

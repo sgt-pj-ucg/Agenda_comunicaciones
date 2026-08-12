@@ -1,4 +1,4 @@
-// Agenda Comunicaciones · voz asistida limpia 1.1.2
+// Agenda Comunicaciones · voz Android robusta 1.1.3
 const SCRIPT_URL = String(window.AGENDA_PRENSA_CONFIG?.scriptUrl || '').trim();
 
 let allEvents = [];
@@ -1950,12 +1950,12 @@ function openVoiceStudio(){
 }
 function buildVoiceCaptureSession(){
   return window.AgendaLongVoiceSession.create({
-    Recognition:SpeechRecognitionAPI,lang:'es-CL',maxMs:120000,restartDelay:260,finishGraceMs:560,
+    Recognition:SpeechRecognitionAPI,lang:'es-CL',maxMs:120000,restartDelay:260,finishGraceMs:950,
     onState:(state,detail)=>{setVoiceCaptureState(state,detail==='no-speech'?'Sigo escuchando — puede continuar':'');syncVoiceHandsFreeButton();},
     onTranscript:text=>updateVoiceCaptureAnalysis(text),
     onTick:(elapsed,max)=>{voiceCaptureElapsed.textContent=formatVoiceElapsed(elapsed);voiceCaptureProgress.style.width=`${Math.min(100,(elapsed/max)*100)}%`;if(max-elapsed<15000&&max-elapsed>0&&voiceCaptureSession?.isActive?.())voiceCaptureStatus.textContent=`Escuchando · quedan ${Math.max(1,Math.ceil((max-elapsed)/1000))} s`;},
     onDone:text=>{setVoiceHoldVisual(false);closeVoiceCapture({cancel:false});parseAndPreviewVoiceActivity(text);},
-    onError:message=>{setVoiceHoldVisual(false);voiceCaptureMode='hold';syncVoiceHandsFreeButton();setVoiceCaptureState('error',message);}
+    onError:message=>{setVoiceHoldVisual(false);voiceCaptureMode='hold';syncVoiceHandsFreeButton();setVoiceCaptureState('error',message);showToast(`⚠️ ${message}`);}
   });
 }
 function beginVoiceCapture(mode='hold'){

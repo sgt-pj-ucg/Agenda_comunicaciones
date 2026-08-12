@@ -1,4 +1,4 @@
-/* Agenda Comunicaciones 1.1.2 · sesión de voz sin eco acumulativo */
+/* Agenda Comunicaciones 1.1.3 · sesión Android robusta sin eco acumulativo */
 (function(global){
 'use strict';
 
@@ -18,6 +18,45 @@ function findSequence(haystack,needle){
   return -1;
 }
 function joinTokenObjects(items){return compact(items.map(item=>item.raw).join(' '));}
+
+
+/**
+ * Convierte la lista de resultados de Web Speech en UNA sola hipótesis coherente.
+ *
+ * Android/Chrome puede devolver algo como:
+ *   "Reunión"
+ *   "Reunión de pleno"
+ *   "Reunión de pleno día quince"
+ *
+ * Esas entradas NO son frases consecutivas: son versiones crecientes de la
+ * misma frase. Por eso se reconcilian con mergeTranscript en vez de unirlas
+ * con espacios.
+ */
+function canonicalizeResultTexts(items){
+  let text='';
+  for(const item of (items||[])){
+    const value=compact(typeof item==='string'?item:item?.text||'');
+    if(!value) continue;
+    text=mergeTranscript(text,value);
+  }
+  return compact(text);
+}
+
+function transcriptEchoScore(text=''){
+  const norms=tokens(text).map(item=>item.norm);
+  if(norms.length<24)return 0;
+  const grams=[];
+  for(let i=0;i<=norms.length-4;i++)grams.push(norms.slice(i,i+4).join('|'));
+  if(!grams.length)return 0;
+  const unique=new Set(grams);
+  return 1-(unique.size/grams.length);
+}
+
+function hasPathologicalEcho(text=''){
+  const wordCount=tokens(text).length;
+  if(wordCount<36)return false;
+  return transcriptEchoScore(text)>=0.34;
+}
 
 /**
  * Une dos transcripciones evitando el patrón típico de Android/Chrome donde
@@ -109,6 +148,15 @@ function create(options={}){
     const text=compact(committed);
     finishing=false;active=false;recognition=null;
     if(!text){setState('error','empty');onError('No alcancé a registrar palabras. Mantenga pulsado e intente nuevamente.','empty');return false;}
+
+    // Barrera de seguridad: nunca abrir el formulario con una transcripción
+    // claramente dañada por un eco repetitivo del motor de voz.
+    if(hasPathologicalEcho(text)){
+      setState('error','echo');
+      onError('El reconocimiento repitió parte del dictado. No se creó ninguna actividad. Mantenga pulsado y vuelva a intentarlo.','echo');
+      return false;
+    }
+
     emit();setState('idle',finishReason);onDone(text,finishReason);return true;
   };
 
@@ -127,7 +175,10 @@ function create(options={}){
       if(text)slots.push({index:i,text,isFinal:Boolean(result?.isFinal)});
     }
     currentSlots=slots;
-    currentSnapshot=compact(slots.map(item=>item.text).join(' '));
+
+    // NO usar slots.map(...).join(' '): Android puede exponer hipótesis
+    // acumulativas como resultados separados y eso crea el eco observado.
+    currentSnapshot=canonicalizeResultTexts(slots);
     emit();
   };
 
@@ -204,5 +255,5 @@ function create(options={}){
   return {start,finish,cancel,isActive:()=>active,isFinishing:()=>finishing,getTranscript:()=>liveText(),getState:()=>lastState,getElapsed:()=>startedAt?Math.max(0,Date.now()-startedAt):0};
 }
 
-global.AgendaLongVoiceSession={create,mergeTranscript,_test:{mergeTranscript,tokens}};
+global.AgendaLongVoiceSession={create,mergeTranscript,_test:{mergeTranscript,tokens,canonicalizeResultTexts,transcriptEchoScore,hasPathologicalEcho}};
 })(typeof window!=='undefined'?window:globalThis);
