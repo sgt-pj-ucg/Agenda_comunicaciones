@@ -1,4 +1,4 @@
-// Agenda Comunicaciones · alternativa de creación por voz flexible + recordatorios 15 min
+// Agenda Comunicaciones · pulsar para hablar + edición robusta + recordatorios
 const SCRIPT_URL = String(window.AGENDA_PRENSA_CONFIG?.scriptUrl || '').trim();
 
 let allEvents = [];
@@ -1729,6 +1729,19 @@ const activityVoiceHint=document.getElementById('activityVoiceHint');
 const voiceBtn=document.getElementById('voiceBtn');
 const createVoiceChoice=document.getElementById('createVoiceChoice');
 const voiceRedictateButton=document.getElementById('voiceRedictateButton');
+const voiceCaptureModal=document.getElementById('voiceCaptureModal');
+const voiceCaptureStage=document.getElementById('voiceCaptureStage');
+const voiceCaptureStatus=document.getElementById('voiceCaptureStatus');
+const voiceCaptureElapsed=document.getElementById('voiceCaptureElapsed');
+const voiceCaptureProgress=document.getElementById('voiceCaptureProgress');
+const voiceCaptureTranscript=document.getElementById('voiceCaptureTranscript');
+const voiceHoldButton=document.getElementById('voiceHoldButton');
+const voiceHoldLabel=document.getElementById('voiceHoldLabel');
+const voiceHoldHint=document.getElementById('voiceHoldHint');
+const voiceLiveHint=document.getElementById('voiceLiveHint');
+const btnVoiceHandsFree=document.getElementById('btnVoiceHandsFree');
+const btnVoiceCaptureCancel=document.getElementById('btnVoiceCaptureCancel');
+const btnCloseVoiceCapture=document.getElementById('btnCloseVoiceCapture');
 const SpeechRecognitionAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
 const speechUA=navigator.userAgent||'';
 const speechIsIOS=/iPad|iPhone|iPod/.test(speechUA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -1866,9 +1879,97 @@ function createSpeechController({button,onPending,onListening,onTranscript,onErr
   return {start,stop,isActive:()=>state!=='idle'};
 }
 
+
+function formatVoiceElapsed(ms){
+  const seconds=Math.max(0,Math.floor(ms/1000));
+  return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+}
+function setVoiceDetected(field,value,detected=false){
+  const item=document.querySelector(`[data-voice-field="${field}"]`);if(!item)return;
+  item.classList.toggle('detected',Boolean(detected));const strong=item.querySelector('strong');if(strong)strong.textContent=value||'—';
+}
+function updateVoiceCaptureAnalysis(text){
+  const clean=String(text||'').trim();
+  voiceCaptureTranscript.textContent=clean||'Mantenga pulsado y diga la actividad completa. Puede hablar con pausas.';
+  if(!clean||!window.AgendaVoiceCreate){
+    setVoiceDetected('fecha','—',false);setVoiceDetected('hora','—',false);setVoiceDetected('tipo','Actividad',false);setVoiceDetected('lugar','—',false);setVoiceDetected('estado','Por Confirmar',false);setVoiceDetected('personas','—',false);return;
+  }
+  const parsed=window.AgendaVoiceCreate.parse(clean,{now:new Date(),forceCreate:true}),d=parsed.data||{},meta=parsed.meta||{};
+  setVoiceDetected('fecha',d.FECHA||'—',Boolean(parsed.detected?.date));
+  setVoiceDetected('hora',meta.explicitNoTime?'Sin hora':(d.HORA||'—'),Boolean(parsed.detected?.time||meta.explicitNoTime));
+  setVoiceDetected('tipo',d.TIPO||'Actividad',Boolean(parsed.detected?.type||meta.inferredType));
+  setVoiceDetected('lugar',d.LUGAR||'—',Boolean(parsed.detected?.location));
+  setVoiceDetected('estado',d.ESTADO||'Por Confirmar',Boolean(parsed.detected?.status));
+  setVoiceDetected('personas',meta.people||'—',Boolean(parsed.detected?.people));
+}
+function setVoiceHoldVisual(active){
+  voiceHoldButton?.classList.toggle('is-pressed',Boolean(active));
+  voiceCaptureStage?.classList.toggle('is-held',Boolean(active));
+  if(voiceHoldLabel)voiceHoldLabel.textContent=active?'SUELTE PARA TERMINAR':'MANTENGA PULSADO';
+  if(voiceHoldHint)voiceHoldHint.textContent=active?'Sigo escuchando mientras lo mantenga':'Hable mientras lo mantiene presionado';
+  if(voiceLiveHint)voiceLiveHint.textContent=active?'Puede seguir hablando':'Aparecerá mientras habla';
+}
+function syncVoiceHandsFreeButton(){
+  if(!btnVoiceHandsFree)return;
+  const active=voiceCaptureMode==='handsfree'&&(voiceCaptureSession?.isActive?.()||voiceCaptureSession?.isFinishing?.());
+  btnVoiceHandsFree.classList.toggle('is-active',active);
+  btnVoiceHandsFree.textContent=active?'Terminar y revisar':'Manos libres';
+  btnVoiceHandsFree.setAttribute('aria-pressed',active?'true':'false');
+}
+function setVoiceCaptureState(state,detail=''){
+  if(!voiceCaptureStage)return;
+  voiceCaptureStage.className=`voice-capture-stage is-${state}${voiceHoldButton?.classList.contains('is-pressed')?' is-held':''}`;
+  const labels={ready:'Mantenga pulsado el micrófono para hablar',starting:'Activando micrófono…',listening:voiceCaptureMode==='hold'?'Escuchando · suelte para terminar':'Escuchando en modo manos libres',waiting:'Sigo escuchando — puede continuar',restarting:'Reconectando escucha…',processing:'Interpretando la actividad…',error:'No fue posible continuar',idle:'Listo'};
+  voiceCaptureStatus.textContent=detail||labels[state]||labels.ready;
+}
+function resetVoiceCaptureUI(){
+  voiceCaptureMode='hold';voiceCaptureSession?.cancel?.();voiceCaptureSession=null;setVoiceHoldVisual(false);syncVoiceHandsFreeButton();
+  voiceCaptureElapsed.textContent='00:00';voiceCaptureProgress.style.width='0%';updateVoiceCaptureAnalysis('');setVoiceCaptureState('ready');
+}
+function closeVoiceCapture({cancel=true}={}){
+  if(cancel)voiceCaptureSession?.cancel?.();voiceCaptureSession=null;voiceCaptureMode='hold';setVoiceHoldVisual(false);syncVoiceHandsFreeButton();
+  voiceCaptureModal?.classList.remove('open');document.body.classList.remove('voice-capture-open');
+}
+function openVoiceStudio(){
+  if(!SpeechRecognitionAPI){showToast('El reconocimiento de voz no está disponible en este navegador.');return;}
+  if(speechIsIOSAlternative&&!speechIsStandalone){showToast('En iPhone, use Safari o la aplicación instalada para crear por voz.');return;}
+  if(!window.AgendaLongVoiceSession||!window.AgendaPressToTalk){showToast('No fue posible cargar el modo de agendamiento por voz.');return;}
+  closeCreateChoiceModal();resetVoiceCaptureUI();voiceCaptureModal?.classList.add('open');document.body.classList.add('voice-capture-open');
+  setTimeout(()=>voiceHoldButton?.focus({preventScroll:true}),140);
+}
+function buildVoiceCaptureSession(){
+  return window.AgendaLongVoiceSession.create({
+    Recognition:SpeechRecognitionAPI,lang:'es-CL',maxMs:120000,restartDelay:260,finishGraceMs:560,
+    onState:(state,detail)=>{setVoiceCaptureState(state,detail==='no-speech'?'Sigo escuchando — puede continuar':'');syncVoiceHandsFreeButton();},
+    onTranscript:text=>updateVoiceCaptureAnalysis(text),
+    onTick:(elapsed,max)=>{voiceCaptureElapsed.textContent=formatVoiceElapsed(elapsed);voiceCaptureProgress.style.width=`${Math.min(100,(elapsed/max)*100)}%`;if(max-elapsed<15000&&max-elapsed>0&&voiceCaptureSession?.isActive?.())voiceCaptureStatus.textContent=`Escuchando · quedan ${Math.max(1,Math.ceil((max-elapsed)/1000))} s`;},
+    onDone:text=>{setVoiceHoldVisual(false);closeVoiceCapture({cancel:false});parseAndPreviewVoiceActivity(text);},
+    onError:message=>{setVoiceHoldVisual(false);voiceCaptureMode='hold';syncVoiceHandsFreeButton();setVoiceCaptureState('error',message);}
+  });
+}
+function beginVoiceCapture(mode='hold'){
+  if(voiceCaptureSession?.isActive?.()||voiceCaptureSession?.isFinishing?.())return false;
+  voiceCaptureMode=mode;updateVoiceCaptureAnalysis('');voiceCaptureElapsed.textContent='00:00';voiceCaptureProgress.style.width='0%';
+  voiceCaptureSession=buildVoiceCaptureSession();syncVoiceHandsFreeButton();
+  const started=voiceCaptureSession.start();if(!started){voiceCaptureMode='hold';syncVoiceHandsFreeButton();return false;}
+  if(mode==='hold')setVoiceHoldVisual(true);haptic(8);return true;
+}
+function finishVoiceCapture(reason='release'){
+  if(!voiceCaptureSession)return false;
+  // No exigimos texto antes de detener: algunos navegadores entregan la última
+  // transcripción justo después de soltar. voice-session.js espera ese cierre.
+  setVoiceHoldVisual(false);setVoiceCaptureState('processing');haptic([8,18,8]);return voiceCaptureSession.finish(reason);
+}
+function cancelVoiceHoldAttempt(){
+  if(!voiceCaptureSession?.isActive?.())return;
+  voiceCaptureSession.cancel?.();voiceCaptureSession=null;voiceCaptureMode='hold';setVoiceHoldVisual(false);syncVoiceHandsFreeButton();setVoiceCaptureState('ready','La pulsación se interrumpió. Mantenga pulsado para intentarlo nuevamente.');
+}
+
 let activityDictationRecognition=null;
 let searchSpeechController=null;
-let createActivitySpeechController=null;
+let voiceCaptureSession=null;
+let voiceCaptureMode='hold';
+let voicePressBinding=null;
 
 if(!SpeechRecognitionAPI){
   activityVoiceBtn.disabled=true;
@@ -1904,25 +2005,31 @@ if(!SpeechRecognitionAPI){
     onError:message=>showToast(message)
   });
 
-  createActivitySpeechController=createSpeechController({
-    button:createVoiceChoice,
-    onPending:()=>showToast('Preparando creación por voz…'),
-    onListening:()=>showToast('🎙️ Diga la actividad con naturalidad; puede incluir fecha, hora, lugar, tipo y estado'),
-    onTranscript:text=>{closeCreateChoiceModal();parseAndPreviewVoiceActivity(text);},
-    onError:message=>showToast(message)
-  });
-
   activityVoiceBtn.addEventListener('click',()=>activityDictationRecognition.start());
   voiceBtn.addEventListener('click',()=>searchSpeechController.start());
-  createVoiceChoice?.addEventListener('click',()=>createActivitySpeechController.start());
-  voiceRedictateButton?.addEventListener('click',()=>{closeActivityModal();openCreateChoiceModal();setTimeout(()=>createActivitySpeechController.start(),180);});
+
+  voicePressBinding=window.AgendaPressToTalk?.bind(voiceHoldButton,{
+    onPress:()=>{if(voiceCaptureMode==='handsfree'&&voiceCaptureSession?.isActive?.())return;beginVoiceCapture('hold');},
+    onRelease:()=>{if(voiceCaptureMode==='hold')finishVoiceCapture('release');},
+    onCancel:()=>cancelVoiceHoldAttempt()
+  });
+  createVoiceChoice?.addEventListener('click',openVoiceStudio);
+  voiceRedictateButton?.addEventListener('click',()=>{closeActivityModal();setTimeout(openVoiceStudio,140);});
+  btnVoiceHandsFree?.addEventListener('click',()=>{
+    if(voiceCaptureMode==='handsfree'&&(voiceCaptureSession?.isActive?.()||voiceCaptureSession?.isFinishing?.())){finishVoiceCapture('handsfree');return;}
+    if(voiceCaptureSession?.isActive?.())return;
+    setVoiceHoldVisual(false);beginVoiceCapture('handsfree');
+  });
+  btnVoiceCaptureCancel?.addEventListener('click',()=>closeVoiceCapture({cancel:true}));
+  btnCloseVoiceCapture?.addEventListener('click',()=>closeVoiceCapture({cancel:true}));
+  voiceCaptureModal?.addEventListener('click',event=>{if(event.target===voiceCaptureModal)closeVoiceCapture({cancel:true});});
 }
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='hidden') return;
   activityDictationRecognition?.stop?.();
   searchSpeechController?.stop?.();
-  createActivitySpeechController?.stop?.();
+  if(voiceCaptureSession?.isActive?.()||voiceCaptureSession?.isFinishing?.()) closeVoiceCapture({cancel:true});
 });
 
 
@@ -1982,6 +2089,7 @@ function showToast(message) {
 
 document.addEventListener('keydown',event=>{
   if(event.key!=='Escape') return;
+  if(voiceCaptureModal?.classList.contains('open')) { closeVoiceCapture({cancel:true}); return; }
   closeDropdown();
   if(timePickerModal.classList.contains('open')) { closeTimePicker(); return; }
   if(activityModal.classList.contains('open')) closeActivityModal();

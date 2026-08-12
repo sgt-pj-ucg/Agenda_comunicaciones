@@ -1,4 +1,4 @@
-/* Agenda Comunicaciones 1.0.9 · intérprete flexible de creación por voz */
+/* Agenda Comunicaciones 1.1.1 · intérprete flexible de creación por voz */
 (function(global){
 'use strict';
 
@@ -183,12 +183,12 @@ function parseType(text){
 function parseStatus(text){
   const raw=String(text||''), a=foldAligned(raw);
   const patterns=[
-    ['Por Confirmar',/\b(?:estado\s+)?por\s+confirmar\b/],
+    ['Por Confirmar',/\b(?:(?:estado|queda|dejar|dejala|marcar)\s+)?(?:por\s+confirmar|a\s+confirmar)\b/],
     ['Redes Sociales',/\b(?:(?:estado|destino)\s+)?(?:para\s+redes(?:\s+sociales)?|redes\s+sociales|redes)\b/],
     ['Boletín',/\b(?:(?:estado|destino)\s+)?(?:para\s+)?boletin\b/],
     ['Pendiente',/\b(?:estado\s+)?pendiente\b/],
     ['Cancelada',/\b(?:estado\s+)?cancelad[oa]\b/],
-    ['Confirmada',/\b(?:estado\s+)?confirmad[oa]\b/],
+    ['Confirmada',/\b(?:(?:estado|queda|dejar|dejala|marcar(?:\s+como)?)\s+)?confirmad[oa]\b/],
     ['Sin estado',/\b(?:sin\s+estado|estado\s+sin\s+definir)\b/]
   ];
   for(const [status,re] of patterns){
@@ -219,7 +219,7 @@ function parseLocation(text){
 
 function parsePeople(text){
   const raw=String(text||''), a=foldAligned(raw);
-  const re=/\b(?:participar[aá]n?|participan?|participa|con\s+participacion\s+de|a\s+cargo\s+de|responsable(?:s)?\s*:?)\s+(.+?)(?=\s*(?:,|\.|;|$)|\s+(?:estado|tipo|ubicad[oa]|lugar|por\s+confirmar|confirmad[oa]|pendiente|cancelad[oa]|para\s+redes|redes\s+sociales|boletin)\b)/i;
+  const re=/\b(?:participar[aá]n?|participan?|participa|asistir[aá]n?|asisten?|asiste|con\s+participacion\s+de|con\s+asistencia\s+de|junto\s+a|participantes?\s*:?|a\s+cargo\s+de|responsable(?:s)?\s*:?)\s+(.+?)(?=\s*(?:,|\.|;|$)|\s+(?:estado|tipo|ubicad[oa]|lugar|por\s+confirmar|confirmad[oa]|pendiente|cancelad[oa]|para\s+redes|redes\s+sociales|boletin)\b)/i;
   const m=re.exec(raw);
   if(!m) return {people:'',match:'',span:null};
   return {people:cap(m[1].replace(/[.,;]+$/,'').trim()),match:m[0],span:[m.index,m.index+m[0].length]};
@@ -307,6 +307,11 @@ function parse(text,options={}){
       status:Boolean(status.span),
       location:Boolean(location.location),
       people:Boolean(people.people)
+    },
+    meta:{
+      people:people.people||'',
+      inferredType:Boolean(type.inferred),
+      explicitNoTime:Boolean(time.explicitNoTime)
     },
     missing,
     warnings
