@@ -1,4 +1,4 @@
-// Agenda Comunicaciones · pulsar para hablar + edición robusta + recordatorios
+// Agenda Comunicaciones · voz asistida limpia 1.1.2
 const SCRIPT_URL = String(window.AGENDA_PRENSA_CONFIG?.scriptUrl || '').trim();
 
 let allEvents = [];
@@ -1018,6 +1018,8 @@ function setActivityTime(value=''){
   });
 }
 
+let voiceCreateContext=null;
+
 function resetActivityForm() {
   ['fDetalle','fLugar'].forEach(id=>document.getElementById(id).value='');
   setActivityTime('');
@@ -1025,6 +1027,9 @@ function resetActivityForm() {
   document.getElementById('fEstado').value='Confirmada';
   document.getElementById('formMsg').textContent='';
   hideVoiceCreatePreview();
+  if(fVoiceParticipants) fVoiceParticipants.value='';
+  if(voiceParticipantsReview) voiceParticipantsReview.hidden=true;
+  voiceCreateContext=null;
 }
 
 function openActivityModal(mode,event=null) {
@@ -1070,32 +1075,30 @@ function hideVoiceCreatePreview(){const p=document.getElementById('voiceCreatePr
 function voiceValueLabel(label,value){return value?`<span class="voice-preview-chip"><b>${escapeHTML(label)}</b>${escapeHTML(value)}</span>`:'';}
 function showVoiceCreatePreview(parsed){
   const p=document.getElementById('voiceCreatePreview'),c=document.getElementById('voicePreviewChips'),t=document.getElementById('voicePreviewTranscript');if(!p||!c||!t)return;
-  const d=parsed.data||{};c.innerHTML=[voiceValueLabel('Fecha',d.FECHA),voiceValueLabel('Hora',d.HORA||'Sin hora'),voiceValueLabel('Tipo',d.TIPO),voiceValueLabel('Estado',d.ESTADO),voiceValueLabel('Lugar',d.LUGAR)].filter(Boolean).join('');
+  const d=parsed.data||{},people=d.PARTICIPANTES||parsed.meta?.people||'';
+  c.innerHTML=[voiceValueLabel('Actividad',d.DETALLE),voiceValueLabel('Fecha',d.FECHA),voiceValueLabel('Hora',d.HORA||'Sin hora'),voiceValueLabel('Lugar',d.LUGAR),voiceValueLabel('Participantes',people),voiceValueLabel('Tipo',d.TIPO),voiceValueLabel('Estado',d.ESTADO)].filter(Boolean).join('');
   t.textContent=`“${parsed.raw}”`;p.hidden=false;
 }
 function applyVoiceCreateResult(parsed){
   if(!parsed||parsed.intent!=='create'){showToast('No pude interpretar el dictado como una nueva actividad.');return false;}
-  openActivityModal('add');
-  const d=parsed.data||{};
+  openActivityModal('add');const d=parsed.data||{},people=(d.PARTICIPANTES||parsed.meta?.people||'').trim();
+  voiceCreateContext={participants:people,raw:parsed.raw||''};
   document.getElementById('fFecha').value=d.FECHA?dateToInput(d.FECHA):'';
   setActivityTime(d.HORA||'');
   document.getElementById('fDetalle').value=d.DETALLE||'';
   document.getElementById('fTipo').value=normalizeType(d.TIPO||'Actividad');
   document.getElementById('fEstado').value=normalizeStatus(d.ESTADO||'Por Confirmar');
   document.getElementById('fLugar').value=d.LUGAR||'';
+  if(fVoiceParticipants)fVoiceParticipants.value=people;
+  if(voiceParticipantsReview)voiceParticipantsReview.hidden=false;
   showVoiceCreatePreview(parsed);
-
-  const missing=(parsed.missing||[]).map(item=>item==='fecha'?'fecha obligatoria':item==='detalle'?'detalle obligatorio':item);
-  const warnings=parsed.warnings||[];
-  const issues=[...missing,...warnings];
-  document.getElementById('formMsg').textContent=issues.length
-    ? `⚠️ Revise antes de guardar: ${issues.join(' · ')}`
-    : '✓ Dictado interpretado. Revise los campos y pulse Guardar actividad.';
+  const missing=(parsed.missing||[]).map(item=>item==='fecha'?'fecha obligatoria':item==='detalle'?'nombre de actividad obligatorio':item);
+  const warnings=parsed.warnings||[],issues=[...missing,...warnings];
+  document.getElementById('formMsg').textContent=issues.length?`⚠️ Revise antes de guardar: ${issues.join(' · ')}`:'✓ Dictado interpretado. Revise cada campo y pulse Guardar actividad.';
   return true;
 }
 function parseAndPreviewVoiceActivity(text){
   if(!window.AgendaVoiceCreate){showToast('El intérprete de voz no está disponible.');return false;}
-  // Este flujo es exclusivo de “Crear por voz”: no exige una frase rígida como “Agenda…”.
   return applyVoiceCreateResult(window.AgendaVoiceCreate.parse(text,{now:new Date(),forceCreate:true}));
 }
 
@@ -1385,12 +1388,16 @@ document.querySelectorAll('.time-shortcuts button').forEach(button=>button.addEv
 
 function getFormEvent() {
   const inputDate=document.getElementById('fFecha').value;
+  const baseDetail=document.getElementById('fDetalle').value.trim();
+  const participants=voiceCreateContext?(fVoiceParticipants?.value||'').trim():'';
+  const participantSuffix=participants?` · Participan: ${participants}`:'';
+  const detail=participants&&!baseDetail.toLocaleLowerCase('es-CL').includes(`participan: ${participants}`.toLocaleLowerCase('es-CL'))?`${baseDetail}${participantSuffix}`:baseDetail;
   return {
     FECHA:normalizeDateKey(inputToDate(inputDate)),
     'DÍA':dayNameFromInput(inputDate),
     HORA:normalizeTimeValue(document.getElementById('fHora').value),
     TIPO:normalizeType(document.getElementById('fTipo').value),
-    DETALLE:document.getElementById('fDetalle').value.trim(),
+    DETALLE:detail,
     LUGAR:document.getElementById('fLugar').value.trim(),
     ESTADO:normalizeStatus(document.getElementById('fEstado').value),
   };
@@ -1401,6 +1408,7 @@ document.getElementById('btnGuardar').addEventListener('click',async()=>{
   const message=document.getElementById('formMsg');
   const button=document.getElementById('btnGuardar');
   if (!data.FECHA||!data.DETALLE) { message.textContent='⚠️ Completa la fecha y el detalle.'; return; }
+  if(data.DETALLE.length>460){message.textContent='⚠️ El detalle más participantes es demasiado extenso. Redúzcalo antes de guardar.';return;}
   button.disabled=true; button.textContent=editingEvent?'Guardando cambios…':'Guardando…'; message.textContent='';
   try {
     if (editingEvent) {
@@ -1729,6 +1737,8 @@ const activityVoiceHint=document.getElementById('activityVoiceHint');
 const voiceBtn=document.getElementById('voiceBtn');
 const createVoiceChoice=document.getElementById('createVoiceChoice');
 const voiceRedictateButton=document.getElementById('voiceRedictateButton');
+const voiceParticipantsReview=document.getElementById('voiceParticipantsReview');
+const fVoiceParticipants=document.getElementById('fVoiceParticipants');
 const voiceCaptureModal=document.getElementById('voiceCaptureModal');
 const voiceCaptureStage=document.getElementById('voiceCaptureStage');
 const voiceCaptureStatus=document.getElementById('voiceCaptureStatus');
@@ -1892,21 +1902,22 @@ function updateVoiceCaptureAnalysis(text){
   const clean=String(text||'').trim();
   voiceCaptureTranscript.textContent=clean||'Mantenga pulsado y diga la actividad completa. Puede hablar con pausas.';
   if(!clean||!window.AgendaVoiceCreate){
-    setVoiceDetected('fecha','—',false);setVoiceDetected('hora','—',false);setVoiceDetected('tipo','Actividad',false);setVoiceDetected('lugar','—',false);setVoiceDetected('estado','Por Confirmar',false);setVoiceDetected('personas','—',false);return;
+    setVoiceDetected('actividad','—',false);setVoiceDetected('fecha','—',false);setVoiceDetected('hora','—',false);setVoiceDetected('tipo','Actividad',false);setVoiceDetected('lugar','—',false);setVoiceDetected('estado','Por Confirmar',false);setVoiceDetected('personas','—',false);return;
   }
   const parsed=window.AgendaVoiceCreate.parse(clean,{now:new Date(),forceCreate:true}),d=parsed.data||{},meta=parsed.meta||{};
+  setVoiceDetected('actividad',d.DETALLE||'—',Boolean(d.DETALLE));
   setVoiceDetected('fecha',d.FECHA||'—',Boolean(parsed.detected?.date));
   setVoiceDetected('hora',meta.explicitNoTime?'Sin hora':(d.HORA||'—'),Boolean(parsed.detected?.time||meta.explicitNoTime));
   setVoiceDetected('tipo',d.TIPO||'Actividad',Boolean(parsed.detected?.type||meta.inferredType));
   setVoiceDetected('lugar',d.LUGAR||'—',Boolean(parsed.detected?.location));
   setVoiceDetected('estado',d.ESTADO||'Por Confirmar',Boolean(parsed.detected?.status));
-  setVoiceDetected('personas',meta.people||'—',Boolean(parsed.detected?.people));
+  setVoiceDetected('personas',d.PARTICIPANTES||meta.people||'—',Boolean(parsed.detected?.people));
 }
 function setVoiceHoldVisual(active){
   voiceHoldButton?.classList.toggle('is-pressed',Boolean(active));
   voiceCaptureStage?.classList.toggle('is-held',Boolean(active));
-  if(voiceHoldLabel)voiceHoldLabel.textContent=active?'SUELTE PARA TERMINAR':'MANTENGA PULSADO';
-  if(voiceHoldHint)voiceHoldHint.textContent=active?'Sigo escuchando mientras lo mantenga':'Hable mientras lo mantiene presionado';
+  if(voiceHoldLabel)voiceHoldLabel.textContent=active?'ESCUCHANDO · SUELTE AL TERMINAR':'MANTENGA PULSADO PARA HABLAR';
+  if(voiceHoldHint)voiceHoldHint.textContent=active?'Puede hablar con calma y hacer pausas':'Suelte cuando haya terminado';
   if(voiceLiveHint)voiceLiveHint.textContent=active?'Puede seguir hablando':'Aparecerá mientras habla';
 }
 function syncVoiceHandsFreeButton(){
@@ -1919,7 +1930,7 @@ function syncVoiceHandsFreeButton(){
 function setVoiceCaptureState(state,detail=''){
   if(!voiceCaptureStage)return;
   voiceCaptureStage.className=`voice-capture-stage is-${state}${voiceHoldButton?.classList.contains('is-pressed')?' is-held':''}`;
-  const labels={ready:'Mantenga pulsado el micrófono para hablar',starting:'Activando micrófono…',listening:voiceCaptureMode==='hold'?'Escuchando · suelte para terminar':'Escuchando en modo manos libres',waiting:'Sigo escuchando — puede continuar',restarting:'Reconectando escucha…',processing:'Interpretando la actividad…',error:'No fue posible continuar',idle:'Listo'};
+  const labels={ready:'Lista para escuchar',starting:'Activando micrófono…',listening:voiceCaptureMode==='hold'?'Escuchando activamente':'Escuchando en modo manos libres',waiting:'Sigo escuchando — puede continuar',restarting:'Reconectando escucha…',processing:'Interpretando la actividad…',error:'No fue posible continuar',idle:'Listo'};
   voiceCaptureStatus.textContent=detail||labels[state]||labels.ready;
 }
 function resetVoiceCaptureUI(){

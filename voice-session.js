@@ -1,13 +1,77 @@
-/* Agenda Comunicaciones 1.1.1 · sesión de voz prolongada */
+/* Agenda Comunicaciones 1.1.2 · sesión de voz sin eco acumulativo */
 (function(global){
 'use strict';
+
 function compact(text=''){return String(text).replace(/\s+/g,' ').trim();}
+function foldToken(value=''){
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,'');
+}
+function tokens(text=''){
+  return compact(text).split(' ').filter(Boolean).map(raw=>({raw,norm:foldToken(raw)})).filter(item=>item.norm);
+}
+function findSequence(haystack,needle){
+  if(!needle.length||needle.length>haystack.length)return -1;
+  outer:for(let i=0;i<=haystack.length-needle.length;i++){
+    for(let j=0;j<needle.length;j++)if(haystack[i+j]!==needle[j])continue outer;
+    return i;
+  }
+  return -1;
+}
+function joinTokenObjects(items){return compact(items.map(item=>item.raw).join(' '));}
+
+/**
+ * Une dos transcripciones evitando el patrón típico de Android/Chrome donde
+ * el reconocimiento vuelve a entregar una frase anterior cada vez más larga.
+ */
+function mergeTranscript(base,incoming){
+  const b=compact(base),n=compact(incoming);
+  if(!b)return n;if(!n)return b;
+  const bt=tokens(b),nt=tokens(n),bn=bt.map(x=>x.norm),nn=nt.map(x=>x.norm);
+  if(!bn.length)return n;if(!nn.length)return b;
+
+  const incomingInsideBase=findSequence(bn,nn);
+  if(incomingInsideBase>=0)return b;
+  const baseInsideIncoming=findSequence(nn,bn);
+  if(baseInsideIncoming>=0)return n;
+
+  // El caso acumulativo más común: mismo comienzo, pero la nueva hipótesis crece.
+  let commonPrefix=0;
+  while(commonPrefix<bn.length&&commonPrefix<nn.length&&bn[commonPrefix]===nn[commonPrefix])commonPrefix++;
+  const shorter=Math.min(bn.length,nn.length);
+  if(commonPrefix>=2&&commonPrefix/shorter>=0.55){
+    return nn.length>=bn.length?n:b;
+  }
+
+  // Segundo caso común: el nuevo bloque repite el final del bloque anterior.
+  let best=0;
+  const max=Math.min(bn.length,nn.length);
+  for(let k=max;k>=1;k--){
+    let ok=true;
+    for(let j=0;j<k;j++)if(bn[bn.length-k+j]!==nn[j]){ok=false;break;}
+    if(ok){best=k;break;}
+  }
+  // Un solo token solo se usa si es suficientemente distintivo.
+  if(best===1&&String(bt[bt.length-1]?.norm||'').length<5)best=0;
+  if(best>0)return compact(`${b} ${joinTokenObjects(nt.slice(best))}`);
+
+  // Si el bloque entrante es una versión anterior del comienzo, no la repetimos.
+  let reverse=0;
+  for(let k=max;k>=2;k--){
+    let ok=true;
+    for(let j=0;j<k;j++)if(nn[nn.length-k+j]!==bn[j]){ok=false;break;}
+    if(ok){reverse=k;break;}
+  }
+  if(reverse>=2)return b;
+
+  return compact(`${b} ${n}`);
+}
+
 function create(options={}){
   const Recognition=options.Recognition;
   const lang=options.lang||'es-CL';
   const maxMs=Math.max(15000,Number(options.maxMs)||120000);
-  const restartDelay=Math.max(100,Number(options.restartDelay)||260);
-  const finishGraceMs=Math.max(180,Number(options.finishGraceMs)||520);
+  const restartDelay=Math.max(120,Number(options.restartDelay)||220);
+  const finishGraceMs=Math.max(220,Number(options.finishGraceMs)||700);
   const onState=typeof options.onState==='function'?options.onState:()=>{};
   const onTranscript=typeof options.onTranscript==='function'?options.onTranscript:()=>{};
   const onTick=typeof options.onTick==='function'?options.onTick:()=>{};
@@ -16,15 +80,14 @@ function create(options={}){
 
   let recognition=null,active=false,finishing=false,startedAt=0,lastState='idle',finishReason='manual';
   let maxTimer=0,tickTimer=0,restartTimer=0,finishTimer=0;
-  let finalParts=[],interim='';
+  let committed='',currentSnapshot='',currentSlots=[];
 
   const setState=(state,detail='')=>{lastState=state;onState(state,detail);};
-  const clearTimer=id=>{if(id)clearTimeout(id);};
-  const clearAll=()=>{clearTimer(maxTimer);clearTimer(restartTimer);clearTimer(finishTimer);if(tickTimer)clearInterval(tickTimer);maxTimer=restartTimer=finishTimer=tickTimer=0;};
-  const finalText=()=>compact(finalParts.join(' '));
-  const combinedText=()=>compact([finalText(),interim].filter(Boolean).join(' '));
-  const emit=()=>onTranscript(combinedText(),{finalText:finalText(),interimText:compact(interim)});
-  const pushFinal=value=>{const part=compact(value);if(!part)return;const prev=finalParts[finalParts.length-1]||'';if(prev.toLocaleLowerCase('es')===part.toLocaleLowerCase('es'))return;finalParts.push(part);};
+  const clearTimeoutSafe=id=>{if(id)clearTimeout(id);};
+  const clearAll=()=>{clearTimeoutSafe(maxTimer);clearTimeoutSafe(restartTimer);clearTimeoutSafe(finishTimer);if(tickTimer)clearInterval(tickTimer);maxTimer=restartTimer=finishTimer=tickTimer=0;};
+  const liveText=()=>mergeTranscript(committed,currentSnapshot);
+  const emit=()=>onTranscript(liveText(),{committedText:committed,currentText:currentSnapshot});
+  const commitCurrent=()=>{if(currentSnapshot)committed=mergeTranscript(committed,currentSnapshot);currentSnapshot='';currentSlots=[];};
   const errorMessage=code=>({
     'not-allowed':'Permiso de voz bloqueado. Autorice el micrófono y vuelva a intentarlo.',
     'service-not-allowed':'El servicio de reconocimiento de voz no está disponible en este navegador.',
@@ -35,44 +98,56 @@ function create(options={}){
 
   const fatal=(message,code='error')=>{
     active=false;finishing=false;clearAll();
-    try{recognition?.abort?.();}catch(_){}
+    try{recognition?.abort?.();}catch(_){ }
     recognition=null;setState('error',code);onError(message,code);
   };
 
   const completeFinish=()=>{
-    clearTimer(finishTimer);finishTimer=0;
-    if(!finishing)return;
-    if(interim){pushFinal(interim);interim='';emit();}
-    const text=combinedText();
+    clearTimeoutSafe(finishTimer);finishTimer=0;
+    if(!finishing)return false;
+    commitCurrent();
+    const text=compact(committed);
     finishing=false;active=false;recognition=null;
     if(!text){setState('error','empty');onError('No alcancé a registrar palabras. Mantenga pulsado e intente nuevamente.','empty');return false;}
-    finalParts=[text];interim='';emit();setState('idle',finishReason);onDone(text,finishReason);return true;
+    emit();setState('idle',finishReason);onDone(text,finishReason);return true;
   };
 
   const scheduleRestart=()=>{
     if(!active||finishing)return;
-    clearTimer(restartTimer);setState('restarting');
+    clearTimeoutSafe(restartTimer);setState('restarting');
     restartTimer=setTimeout(()=>startRecognizer(),restartDelay);
+  };
+
+  const rebuildSnapshot=results=>{
+    const len=Number(results?.length)||0;
+    const slots=[];
+    for(let i=0;i<len;i++){
+      const result=results[i];
+      const text=compact(result?.[0]?.transcript||'');
+      if(text)slots.push({index:i,text,isFinal:Boolean(result?.isFinal)});
+    }
+    currentSlots=slots;
+    currentSnapshot=compact(slots.map(item=>item.text).join(' '));
+    emit();
   };
 
   const startRecognizer=()=>{
     if(!active||finishing)return;
     if(!Recognition){fatal('El reconocimiento de voz no está disponible en este navegador.','unsupported');return;}
     try{
+      currentSnapshot='';currentSlots=[];
       const current=new Recognition();recognition=current;
       current.lang=lang;current.continuous=true;current.interimResults=true;current.maxAlternatives=1;
-      current.onstart=()=>{if(current!==recognition||(!active&& !finishing))return;setState('listening');};
+      current.onstart=()=>{if(current!==recognition||(!active&&!finishing))return;setState('listening');};
       current.onresult=event=>{
         if(current!==recognition||(!active&&!finishing))return;
-        let interimParts=[];const start=Number.isInteger(event.resultIndex)?event.resultIndex:0;
-        for(let i=start;i<(event.results?.length||0);i++){
-          const result=event.results[i],text=compact(result?.[0]?.transcript||'');if(!text)continue;
-          if(result.isFinal)pushFinal(text);else interimParts.push(text);
-        }
-        interim=compact(interimParts.join(' '));emit();
+        // Se reconstruye la hipótesis COMPLETA de este recognizer. Nunca se
+        // anexan resultados parciales uno detrás de otro.
+        rebuildSnapshot(event.results);
       };
       current.onerror=event=>{
-        if(current!==recognition)return;const code=event?.error||'error';
+        if(current!==recognition)return;
+        const code=event?.error||'error';
         if(finishing&&(code==='aborted'||code==='no-speech'))return;
         if(!active)return;
         if(code==='aborted')return;
@@ -81,19 +156,25 @@ function create(options={}){
       };
       current.onend=()=>{
         if(current!==recognition)return;
-        if(interim){pushFinal(interim);interim='';emit();}
+        // Android puede cerrar una sesión después de una pausa. Conservamos
+        // una sola versión del bloque y la reconciliamos con lo anterior.
+        commitCurrent();
         recognition=null;
         if(finishing){completeFinish();return;}
         if(active)scheduleRestart();
       };
       current.start();
-    }catch(error){recognition=null;if(finishing){completeFinish();return;}if(active)scheduleRestart();}
+    }catch(error){
+      recognition=null;
+      if(finishing){completeFinish();return;}
+      if(active)scheduleRestart();
+    }
   };
 
   const start=()=>{
     if(active||finishing)return false;
     if(!Recognition){onError('El reconocimiento de voz no está disponible en este navegador.','unsupported');return false;}
-    clearAll();finalParts=[];interim='';finishing=false;active=true;startedAt=Date.now();finishReason='manual';
+    clearAll();committed='';currentSnapshot='';currentSlots=[];finishing=false;active=true;startedAt=Date.now();finishReason='manual';
     setState('starting');emit();onTick(0,maxMs);
     tickTimer=setInterval(()=>{if(active)onTick(Math.min(Date.now()-startedAt,maxMs),maxMs);},250);
     maxTimer=setTimeout(()=>finish('timeout'),maxMs);startRecognizer();return true;
@@ -103,24 +184,25 @@ function create(options={}){
     if(finishing)return false;
     if(!active&&lastState!=='error')return false;
     finishing=true;active=false;finishReason=reason;
-    clearTimer(maxTimer);maxTimer=0;clearTimer(restartTimer);restartTimer=0;if(tickTimer){clearInterval(tickTimer);tickTimer=0;}
+    clearTimeoutSafe(maxTimer);maxTimer=0;clearTimeoutSafe(restartTimer);restartTimer=0;if(tickTimer){clearInterval(tickTimer);tickTimer=0;}
     setState('processing',reason);
     const current=recognition;
     if(current){
-      try{current.stop();}catch(_){try{current.abort();}catch(__){}}
+      try{current.stop();}catch(_){try{current.abort();}catch(__){ }}
       finishTimer=setTimeout(completeFinish,finishGraceMs);
-    }else finishTimer=setTimeout(completeFinish,60);
+    }else finishTimer=setTimeout(completeFinish,80);
     return true;
   };
 
   const cancel=()=>{
     if(!active&&!finishing&&lastState==='idle')return;
     active=false;finishing=false;clearAll();
-    try{recognition?.abort?.();}catch(_){}
-    recognition=null;interim='';setState('idle','cancel');
+    try{recognition?.abort?.();}catch(_){ }
+    recognition=null;committed='';currentSnapshot='';currentSlots=[];setState('idle','cancel');
   };
 
-  return {start,finish,cancel,isActive:()=>active,isFinishing:()=>finishing,getTranscript:()=>combinedText(),getState:()=>lastState,getElapsed:()=>startedAt?Math.max(0,Date.now()-startedAt):0};
+  return {start,finish,cancel,isActive:()=>active,isFinishing:()=>finishing,getTranscript:()=>liveText(),getState:()=>lastState,getElapsed:()=>startedAt?Math.max(0,Date.now()-startedAt):0};
 }
-global.AgendaLongVoiceSession={create};
+
+global.AgendaLongVoiceSession={create,mergeTranscript,_test:{mergeTranscript,tokens}};
 })(typeof window!=='undefined'?window:globalThis);

@@ -1,4 +1,4 @@
-/* Agenda Comunicaciones 1.1.1 · intérprete flexible de creación por voz */
+/* Agenda Comunicaciones 1.1.2 · intérprete flexible de creación por voz */
 (function(global){
 'use strict';
 
@@ -11,9 +11,10 @@ const SMALL={
   cero:0,un:1,uno:1,una:1,primero:1,primera:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,
   diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,diecisiete:17,dieciocho:18,diecinueve:19,
   veinte:20,veintiuno:21,veintiun:21,veintidos:22,veintitres:23,veinticuatro:24,veinticinco:25,veintiseis:26,
-  veintisiete:27,veintiocho:28,veintinueve:29,treinta:30,treintauno:31
+  veintisiete:27,veintiocho:28,veintinueve:29,treinta:30,cuarenta:40,cincuenta:50,treintauno:31
 };
 const NUMBER_TOKEN = '(?:primero|primera|una|uno|un|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|trece|catorce|quince|dieciseis|diecisiete|dieciocho|diecinueve|veinte|veintiuno|veintiun|veintidos|veintitres|veinticuatro|veinticinco|veintiseis|veintisiete|veintiocho|veintinueve|treinta(?:\\s+y\\s+(?:uno|un|una))?|\\d{1,2})';
+const MINUTE_TOKEN = '(?:media|cuarto|diez|quince|veinte|veinticinco|treinta(?:\\s+y\\s+(?:cinco))?|cuarenta(?:\\s+y\\s+(?:cinco))?|cincuenta(?:\\s+y\\s+(?:cinco))?|'+NUMBER_TOKEN+')';
 const YEAR_TOKEN = '(?:20\\d{2}|dos\\s+mil(?:\\s+(?:veinte|veintiuno|veintidos|veintitres|veinticuatro|veinticinco|veintiseis|veintisiete|veintiocho|veintinueve|treinta(?:\\s+y\\s+(?:uno|dos|tres|cuatro|cinco))?))?)';
 
 function foldAligned(value=''){
@@ -41,8 +42,8 @@ function parseSmallNumber(value){
   const t=fold(value).replace(/\s+/g,' ');
   if(/^\d+$/.test(t)) return Number(t);
   if(SMALL[t]!==undefined) return SMALL[t];
-  const m=t.match(/^treinta\s+y\s+(uno|un|una)$/);
-  if(m) return 31;
+  const m=t.match(/^(treinta|cuarenta|cincuenta)\s+y\s+(uno|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)$/);
+  if(m){const tens={treinta:30,cuarenta:40,cincuenta:50};return tens[m[1]]+(SMALL[m[2]]??0);}
   return NaN;
 }
 function parseYear(value,currentYear){
@@ -146,7 +147,7 @@ function parseTime(text){
     if(h>=0&&h<=23) return spanResult(raw,m,{time:`${pad2(h)}:${pad2(m[2]||0)}`,explicitNoTime:false});
   }
 
-  const wordsRe=new RegExp(`\\b(?:a\\s+las?|a\\s+la)\\s+(${NUMBER_TOKEN})(?:\\s+(?:horas?))?(?:\\s*(?:con|y)?\\s*(media|cuarto|${NUMBER_TOKEN})(?:\\s*(?:minutos?|min))?)?(?:\\s+(de\\s+la\\s+manana|de\\s+la\\s+tarde|de\\s+la\\s+noche|del\\s+dia|am|pm|a\\s*m|p\\s*m))?\\b`);
+  const wordsRe=new RegExp(`\\b(?:a\\s+las?|a\\s+la)\\s+(${NUMBER_TOKEN})(?:\\s+(?:horas?))?(?:\\s*(?:con|y)?\\s*(${MINUTE_TOKEN})(?:\\s*(?:minutos?|min))?)?(?:\\s+(de\\s+la\\s+manana|de\\s+la\\s+tarde|de\\s+la\\s+noche|del\\s+dia|am|pm|a\\s*m|p\\s*m))?\\b`);
   m=wordsRe.exec(a);
   if(m){
     let h=parseSmallNumber(m[1]), min=0;
@@ -154,6 +155,15 @@ function parseTime(text){
       min=m[2]==='media'?30:m[2]==='cuarto'?15:parseSmallNumber(m[2]);
     }
     h=applyPeriod(h,m[3]);
+    if(Number.isFinite(h)&&h>=0&&h<=23&&Number.isFinite(min)&&min>=0&&min<=59){
+      return spanResult(raw,m,{time:`${pad2(h)}:${pad2(min)}`,explicitNoTime:false});
+    }
+  }
+  // Forma conversacional sin “a las”: “mañana nueve treinta”, “once cuarenta y cinco”.
+  const bareWordsRe=new RegExp(`\\b(${NUMBER_TOKEN})\\s+(${MINUTE_TOKEN})\\b`);
+  m=bareWordsRe.exec(a);
+  if(m){
+    let h=parseSmallNumber(m[1]), min=m[2]==='media'?30:m[2]==='cuarto'?15:parseSmallNumber(m[2]);
     if(Number.isFinite(h)&&h>=0&&h<=23&&Number.isFinite(min)&&min>=0&&min<=59){
       return spanResult(raw,m,{time:`${pad2(h)}:${pad2(min)}`,explicitNoTime:false});
     }
@@ -199,35 +209,45 @@ function parseStatus(text){
 
 function parseLocation(text){
   const raw=String(text||''), a=foldAligned(raw);
-  const stop='(?=\\s*(?:,|\\.|;|$)|\\s+(?:particip(?:a|an|ara|aran|ara?n)|con\\s+participacion|a\\s+cargo|responsable|estado|tipo|confirmad[oa]|por\\s+confirmar|pendiente|cancelad[oa]|para\\s+redes|redes\\s+sociales|boletin)\\b)';
+  const stop='(?=\\s*(?:,|\\.|;|$)|\\s+(?:particip(?:aran|an|a|ara|ar)?|participantes?|asist(?:iran|en|e|ira|entes?)?|van\\s+a\\s+participar|con\\s+participacion|con\\s+asistencia|con\\s+(?:todos?|todas?)\\s+(?:los|las)|junto\\s+a|a\\s+cargo|responsables?|estado|tipo|confirmad[oa]|por\\s+confirmar|pendiente|cancelad[oa]|para\\s+redes|redes\\s+sociales|boletin)\\b)';
+  const ordinal='(?:(?:la\\s+)?(?:primera|segunda|tercera|cuarta|quinta|sexta|septima|octava|novena|decima)\\s+)?';
+  const placeKind='(?:sala|oficina|salon|auditorio|tribunal|corte|radio|edificio|plaza|dependencias?|ciudad|hall|patio|biblioteca)';
   const patterns=[
     new RegExp(`\\b(?:ubicad[oa]\\s+en|ubicacion\\s*:?|lugar\\s*:?|lugar\\s+en|se\\s+realizara\\s+en|sera\\s+en)\\s+(.+?)${stop}`),
-    new RegExp(`\\ben\\s+((?:la\\s+)?(?:sala|oficina|salon|auditorio|tribunal|corte|radio|edificio|plaza|dependencias?|ciudad)\\b.+?)${stop}`),
+    new RegExp(`\\ben\\s+((?:la\\s+)?${ordinal}${placeKind}\\b.*?)${stop}`),
     /\b((?:por|via)\s+(?:zoom|meet|teams)|zoom|google\s+meet|microsoft\s+teams)\b/
   ];
   for(const re of patterns){
     const m=re.exec(a);
-    if(m){
-      let value=(m[1]||m[0]).trim().replace(/^(?:en\s+)/,'');
-      value=raw.slice(m.index+(m[0].indexOf(m[1]||m[0])), m.index+(m[0].indexOf(m[1]||m[0]))+(m[1]||m[0]).length).trim();
-      value=value.replace(/^en\s+/i,'').replace(/[.,;]+$/,'').trim();
-      return spanResult(raw,m,{location:cap(value)});
-    }
+    if(!m) continue;
+    const captured=m[1]||m[0];
+    const offset=m[0].indexOf(captured);
+    let value=raw.slice(m.index+Math.max(0,offset),m.index+Math.max(0,offset)+captured.length).trim();
+    value=value.replace(/^(?:en|por|vía|via)\s+/i,'').replace(/[.,;]+$/,'').trim();
+    return spanResult(raw,m,{location:cap(value)});
   }
   return {location:'',match:'',span:null};
 }
 
 function parsePeople(text){
   const raw=String(text||''), a=foldAligned(raw);
-  const re=/\b(?:participar[aá]n?|participan?|participa|asistir[aá]n?|asisten?|asiste|con\s+participacion\s+de|con\s+asistencia\s+de|junto\s+a|participantes?\s*:?|a\s+cargo\s+de|responsable(?:s)?\s*:?)\s+(.+?)(?=\s*(?:,|\.|;|$)|\s+(?:estado|tipo|ubicad[oa]|lugar|por\s+confirmar|confirmad[oa]|pendiente|cancelad[oa]|para\s+redes|redes\s+sociales|boletin)\b)/i;
-  const m=re.exec(raw);
-  if(!m) return {people:'',match:'',span:null};
-  return {people:cap(m[1].replace(/[.,;]+$/,'').trim()),match:m[0],span:[m.index,m.index+m[0].length]};
+  const stop='(?=\\s*(?:,|\\.|;|$)|\\s+(?:estado|tipo|ubicad[oa]|ubicacion|lugar|por\\s+confirmar|confirmad[oa]|pendiente|cancelad[oa]|para\\s+redes|redes\\s+sociales|boletin)\\b)';
+  const patterns=[
+    new RegExp(`\\b(?:participaran|participan|participa|asistiran|asisten|asiste|asistentes?|van\\s+a\\s+participar|con\\s+participacion\\s+de|con\\s+asistencia\\s+de|junto\\s+a|participantes?\\s*:?|a\\s+cargo\\s+de|responsables?\\s*:?)\\s+(.+?)${stop}`),
+    new RegExp(`\\bcon\\s+((?:todos?|todas?)\\s+(?:los|las)\\s+[a-zñ]+(?:\\s+[a-zñ]+){0,5}|mm(?:\\s+y\\s+|,\\s*)ph|ph(?:\\s+y\\s+|,\\s*)mm)${stop}`)
+  ];
+  for(const re of patterns){
+    const m=re.exec(a);if(!m)continue;
+    const captured=m[1]||'';const offset=m[0].indexOf(captured);
+    const value=raw.slice(m.index+Math.max(0,offset),m.index+Math.max(0,offset)+captured.length).replace(/[.,;]+$/,'').trim();
+    return spanResult(raw,m,{people:cap(value)});
+  }
+  return {people:'',match:'',span:null};
 }
 
 function commandSpan(text){
   const raw=String(text||''), a=foldAligned(raw);
-  const re=/^\s*(?:por\s+favor\s+)?(?:agendame|agenda(?:r)?|crea(?:r)?|programa(?:r)?|registra(?:r)?|anota(?:r)?|incorpora(?:r)?|nueva\s+actividad)\b\s*/;
+  const re=/^\s*(?:por\s+favor\s+)?(?:(?:quiero|necesito|puedes|podrias|favor\s+de)\s+)?(?:agendame|agenda(?:r)?|crea(?:r)?|programa(?:r)?|registra(?:r)?|anota(?:r)?|incorpora(?:r)?|nueva\s+actividad)\b\s*/;
   const m=re.exec(a);
   return m?[m.index,m.index+m[0].length]:null;
 }
@@ -273,9 +293,6 @@ function parse(text,options={}){
     const l=fold(raw),m=l.match(/\b(?:mm|ph)\b/);
     if(m) detail=m[0].toUpperCase();
   }
-  if(people.people){
-    detail=detail?`${detail} · Participan: ${people.people}`:`Participan: ${people.people}`;
-  }
 
   const missing=[];
   if(!date.date) missing.push('fecha');
@@ -285,8 +302,10 @@ function parse(text,options={}){
   const l=fold(raw);
   const mentionedTime=/\b(?:hora|horas|a\s+las?|a\s+la|\d{1,2}[:.]\d{2})\b/.test(l);
   if(mentionedTime&&!time.time&&!time.explicitNoTime) warnings.push('Se mencionó una hora, pero no pude interpretarla.');
-  const mentionedLocation=/\b(?:ubicad|ubicacion|lugar|sala|oficina|salon|auditorio|tribunal|corte|radio|zoom|meet|teams)\b/.test(l);
+  const mentionedLocation=/\b(?:ubicad[oa]\s+en|ubicacion|lugar|en\s+(?:la\s+)?(?:(?:primera|segunda|tercera|cuarta|quinta)\s+)?(?:sala|oficina|salon|auditorio|tribunal|corte|radio|edificio|plaza)|por\s+zoom|via\s+zoom|zoom|meet|teams)\b/.test(l);
   if(mentionedLocation&&!location.location) warnings.push('Se mencionó un lugar, pero no pude separarlo con seguridad.');
+  const mentionedPeople=/\b(?:particip|asist|participantes|responsable|junto\s+a|a\s+cargo)\b/.test(l);
+  if(mentionedPeople&&!people.people) warnings.push('Se mencionaron participantes, pero no pude separarlos con seguridad.');
 
   return {
     intent:(options.forceCreate||isCreateIntent(raw))?'create':'unknown',
@@ -297,7 +316,8 @@ function parse(text,options={}){
       TIPO:type.type,
       DETALLE:detail,
       LUGAR:location.location,
-      ESTADO:status.status
+      ESTADO:status.status,
+      PARTICIPANTES:people.people||''
     },
     detected:{
       date:Boolean(date.date),

@@ -1,29 +1,14 @@
-# Agenda Comunicaciones 1.1.1 — Pulsar para hablar
+# Agenda Comunicaciones 1.1.2 — Voz asistida limpia
 
-## Experiencia principal
-`+ → Crear por voz` abre un estudio dedicado. La forma principal de dictar es:
+Corrección focalizada del módulo “Crear por voz”. El formulario manual, backend, edición, estados, calendario, feriados y recordatorios se mantienen.
 
-1. mantener pulsado el micrófono central;
-2. hablar con naturalidad, haciendo pausas si es necesario;
-3. soltar cuando termine;
-4. la app interpreta el dictado y abre el formulario habitual para revisar;
-5. nada se guarda hasta pulsar `Guardar actividad`.
+## Cambios
+- Nueva barra moderna “mantener pulsado para hablar”.
+- Transcripción reconstruida por hipótesis en vez de concatenar parciales.
+- Reconciliación anti-eco entre reinicios del reconocimiento de Android/Chrome.
+- Actividad, lugar y participantes se identifican y muestran separados.
+- Soporte de lugares como “primera sala de la Corte”, “la segunda sala”, “sala número 1”, Zoom, etc.
+- Participantes tienen un campo de revisión propio en el flujo de voz; al guardar se conservan dentro de DETALLE porque la planilla institucional no tiene columna PARTICIPANTES.
+- La transcripción visual tiene altura limitada para que nunca vuelva a deformar la tarjeta/calendario.
 
-Mientras se mantiene pulsado, el botón cambia a `SUELTE PARA TERMINAR`, aparecen anillos/onda activos, cronómetro, transcripción en vivo y campos detectados.
-
-Existe un modo alternativo `Manos libres` para PC/accesibilidad.
-
-## Seguridad y compatibilidad
-La creación manual sigue intacta y es independiente del flujo de voz. Buscar por voz y dictar solo el campo Detalle siguen usando el controlador corto anterior.
-
-`Code.gs`, `config.js`, `manifest.webmanifest` e íconos no fueron modificados. El backend continúa siendo 1.0.7.
-
-Los recordatorios de 15 minutos se mantienen sin cambios.
-
-## Pruebas
-- 51 frases de creación por voz;
-- 9 consultas verificadas para no crear actividades por error;
-- motor largo probado con resultado final que llega después de soltar;
-- pulsar/soltar probado con puntero y teclado;
-- cancelación durante procesamiento no dispara creación;
-- sintaxis correcta en app.js, voice-create.js, voice-session.js, voice-press.js y Code.gs.
+No requiere cambios en Code.gs si ya está instalado el backend 1.0.7.

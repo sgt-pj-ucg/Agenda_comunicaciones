@@ -25,7 +25,7 @@
   <link rel="preload" as="image" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=111" />
+  <link rel="stylesheet" href="styles.css?v=112" />
 </head>
 <body>
 
@@ -192,64 +192,61 @@
   </div>
 </div>
 
-<!-- MODAL: Pulsar para hablar -->
+<!-- MODAL: Voz asistida -->
 <div aria-labelledby="voiceCaptureTitle" aria-modal="true" class="modal-overlay voice-capture-overlay" id="voiceCaptureModal" role="dialog">
-  <div class="modal voice-capture-modal">
+  <div class="modal voice-capture-modal voice-assistant-modal">
     <div class="modal-handle"></div>
     <div class="modal-heading voice-capture-heading">
       <div>
-        <div class="voice-capture-kicker">AGENDAMIENTO POR VOZ</div>
-        <h2 id="voiceCaptureTitle">Mantenga pulsado y hábleme</h2>
-        <div class="modal-subtitle">Puede hablar con calma, hacer pausas y decir los datos en el orden que le resulte natural.</div>
+        <div class="voice-capture-kicker"><span></span> VOZ ASISTIDA</div>
+        <h2 id="voiceCaptureTitle">Díctelo con calma</h2>
+        <div class="modal-subtitle">Mantenga pulsada la barra mientras habla. Al soltar, solo prepararemos los campos para que usted los revise.</div>
       </div>
       <button aria-label="Cerrar agendamiento por voz" class="modal-close" id="btnCloseVoiceCapture" type="button">✕</button>
     </div>
 
     <div class="voice-capture-stage is-ready" id="voiceCaptureStage">
-      <div class="voice-capture-status" aria-live="polite">
-        <span class="voice-live-dot" aria-hidden="true"></span>
-        <strong id="voiceCaptureStatus">Mantenga pulsado el micrófono para hablar</strong>
+      <div class="voice-status-rail" aria-live="polite">
+        <div class="voice-status-left"><span class="voice-live-dot" aria-hidden="true"></span><strong id="voiceCaptureStatus">Lista para escuchar</strong></div>
         <span class="voice-capture-time"><b id="voiceCaptureElapsed">00:00</b><span>/ 02:00</span></span>
       </div>
 
-      <div class="voice-hold-wrap">
-        <button aria-describedby="voiceHoldInstruction" aria-label="Mantenga pulsado mientras habla y suelte cuando termine" class="voice-hold-button" id="voiceHoldButton" type="button">
-          <span class="voice-hold-ring ring-one" aria-hidden="true"></span>
-          <span class="voice-hold-ring ring-two" aria-hidden="true"></span>
-          <span class="voice-hold-core">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="12" rx="4"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5M9 22h6"/></svg>
-            <strong id="voiceHoldLabel">MANTENGA PULSADO</strong>
-            <small id="voiceHoldHint">Hable mientras lo mantiene presionado</small>
+      <div class="voice-command-shell">
+        <button aria-describedby="voiceHoldInstruction" aria-label="Mantenga pulsado mientras habla y suelte cuando termine" class="voice-talk-bar" id="voiceHoldButton" type="button">
+          <span class="voice-talk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="12" rx="4"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5M9 22h6"/></svg>
           </span>
+          <span class="voice-talk-copy"><strong id="voiceHoldLabel">MANTENGA PULSADO PARA HABLAR</strong><small id="voiceHoldHint">Suelte cuando haya terminado</small></span>
+          <span class="voice-talk-meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         </button>
-        <div class="voice-hold-instruction" id="voiceHoldInstruction"><span aria-hidden="true">●</span> Suelte el botón cuando haya terminado de dictar.</div>
+        <div class="voice-hold-instruction" id="voiceHoldInstruction"><span aria-hidden="true">●</span> Mientras esté en verde, el micrófono sigue escuchando.</div>
       </div>
 
-      <div class="voice-wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <div class="voice-capture-progress" aria-hidden="true"><i id="voiceCaptureProgress"></i></div>
 
-      <div class="voice-live-panel">
-        <div class="voice-live-label"><span>TRANSCRIPCIÓN EN VIVO</span><em id="voiceLiveHint">Aparecerá mientras habla</em></div>
-        <p aria-live="polite" id="voiceCaptureTranscript">Mantenga pulsado y diga, por ejemplo: reunión de pauta mañana a las diez, en sala uno, participan MM y PH.</p>
+      <div class="voice-live-panel voice-transcript-card">
+        <div class="voice-live-label"><span>LO QUE ESTOY ESCUCHANDO</span><em id="voiceLiveHint">Aparecerá aquí en tiempo real</em></div>
+        <p aria-live="polite" id="voiceCaptureTranscript">Ejemplo: reunión de pleno el 15 de diciembre a las 15 horas, en primera sala de la Corte, participarán todos los ministros.</p>
       </div>
 
-      <div class="voice-detected-head"><strong>Voy identificando</strong><span>Puede decir los datos en cualquier orden</span></div>
-      <div class="voice-detected-grid" id="voiceDetectedGrid">
+      <div class="voice-detected-head"><strong>Datos identificados</strong><span>Se actualizan mientras habla</span></div>
+      <div class="voice-detected-grid voice-detected-grid-v2" id="voiceDetectedGrid">
+        <div class="voice-detected-item voice-activity-detected" data-voice-field="actividad"><small>Actividad</small><strong>—</strong></div>
         <div class="voice-detected-item" data-voice-field="fecha"><small>Fecha</small><strong>—</strong></div>
         <div class="voice-detected-item" data-voice-field="hora"><small>Hora</small><strong>—</strong></div>
-        <div class="voice-detected-item" data-voice-field="tipo"><small>Tipo</small><strong>Actividad</strong></div>
         <div class="voice-detected-item" data-voice-field="lugar"><small>Lugar</small><strong>—</strong></div>
-        <div class="voice-detected-item" data-voice-field="estado"><small>Estado</small><strong>Por Confirmar</strong></div>
         <div class="voice-detected-item" data-voice-field="personas"><small>Participantes</small><strong>—</strong></div>
+        <div class="voice-detected-item" data-voice-field="tipo"><small>Tipo</small><strong>Actividad</strong></div>
+        <div class="voice-detected-item" data-voice-field="estado"><small>Estado</small><strong>Por Confirmar</strong></div>
       </div>
 
-      <div class="voice-capture-tip"><span aria-hidden="true">✦</span><p><strong>Forma principal:</strong> mantenga pulsado mientras habla y suelte cuando termine. Si prefiere no mantener el dedo, use <b>Manos libres</b>.</p></div>
+      <div class="voice-capture-tip"><span aria-hidden="true">✓</span><p><strong>No se guarda al soltar.</strong> Primero verá el formulario normal con actividad, fecha, hora, lugar y participantes separados para corregirlos.</p></div>
 
       <div class="voice-capture-actions">
         <button class="btn-cancel-modal voice-cancel-button" id="btnVoiceCaptureCancel" type="button">Cancelar</button>
-        <button class="btn-secondary voice-handsfree-button" id="btnVoiceHandsFree" type="button">Manos libres</button>
+        <button class="btn-secondary voice-handsfree-button" id="btnVoiceHandsFree" type="button">Usar manos libres</button>
       </div>
-      <div class="voice-privacy-note">No se guarda el audio. Después del dictado se abre el formulario habitual para revisar y recién allí decidir si se guarda.</div>
+      <div class="voice-privacy-note">El audio no se guarda. El reconocimiento se usa únicamente para preparar la actividad.</div>
     </div>
   </div>
 </div>
@@ -270,6 +267,11 @@
 <div class="voice-preview-chips" id="voicePreviewChips"></div>
 <div class="voice-preview-transcript" id="voicePreviewTranscript"></div>
 <button class="voice-redictate-button" id="voiceRedictateButton" type="button">🎙 Volver a dictar</button>
+<div class="voice-participants-review" id="voiceParticipantsReview" hidden>
+  <label for="fVoiceParticipants">Participantes detectados</label>
+  <input id="fVoiceParticipants" maxlength="160" placeholder="Ej.: todos los ministros, MM y PH" type="text"/>
+  <small>Se conservarán junto al detalle al guardar, sin modificar la estructura de la planilla.</small>
+</div>
 </div>
 <div class="form-row">
 <div class="form-group">
@@ -481,10 +483,10 @@
 <div class="toast" id="toast"></div>
 
 
-<script src="config.js?v=111" defer></script>
-<script src="voice-create.js?v=111" defer></script>
-<script src="voice-session.js?v=111" defer></script>
-<script src="voice-press.js?v=111" defer></script>
-<script src="app.js?v=111" defer></script>
+<script src="config.js?v=112" defer></script>
+<script src="voice-create.js?v=112" defer></script>
+<script src="voice-session.js?v=112" defer></script>
+<script src="voice-press.js?v=112" defer></script>
+<script src="app.js?v=112" defer></script>
 </body>
 </html>
